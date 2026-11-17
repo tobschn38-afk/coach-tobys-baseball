@@ -1,0 +1,1866 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2e24">
+<meta name="format-detection" content="telephone=no">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px system-ui,-apple-system,sans-serif;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+img{max-width:100%}[hidden]{display:none!important}
+button{touch-action:manipulation}
+</style>
+<title>Coach Tobys Baseball App</title>
+<style>
+/* Layout: scoreboard header, field (animated diagram) beside a question panel; stacks on phones */
+:root{
+  --bg:#edf0ea; --surface:#ffffff; --ink:#18211b; --muted:#56635a; --line:#d2dacf;
+  --accent:#1d3a6e; --accent-ink:#ffffff; --good:#2c7a47; --bad:#b3261e; --good-bg:#e3f1e6; --bad-bg:#f8e4e2;
+  --grass:#3d7a3c; --grass2:#458640; --dirt:#bf8d5e; --dirt2:#a87a4f; --chalk:#f7f5ef; --def:#1d3a6e; --run:#c8102e;
+  --board:#1f2e24; --board-ink:#f3f0df; --lamp:#f2c14e;
+  --f-display:"Barlow Condensed","Avenir Next Condensed","Roboto Condensed","Arial Narrow",sans-condensed,Arial,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111612; --surface:#1a211c; --ink:#e6ebe4; --muted:#9ba79e; --line:#2c372f;
+  --accent:#9db8ee; --accent-ink:#0f1a2e; --good:#6cc88a; --bad:#f08a80; --good-bg:#1c3324; --bad-bg:#3a1f1c;
+  --grass:#2e5f30; --grass2:#346a35; --dirt:#93694a; --dirt2:#7e5a3f; --chalk:#ece8dc; --def:#25478a; --run:#d22a43;
+  --board:#0c130e; --board-ink:#efeadb; --lamp:#f2c14e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111612; --surface:#1a211c; --ink:#e6ebe4; --muted:#9ba79e; --line:#2c372f;
+  --accent:#9db8ee; --accent-ink:#0f1a2e; --good:#6cc88a; --bad:#f08a80; --good-bg:#1c3324; --bad-bg:#3a1f1c;
+  --grass:#2e5f30; --grass2:#346a35; --dirt:#93694a; --dirt2:#7e5a3f; --chalk:#ece8dc; --def:#25478a; --run:#d22a43;
+  --board:#0c130e; --board-ink:#efeadb; --lamp:#f2c14e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--f-display);font-weight:700;font-size:2.4rem;line-height:1;margin:0;letter-spacing:.01em;text-transform:uppercase;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;font-size:.95rem}
+.score{display:flex;gap:6px;font-family:var(--f-display);font-variant-numeric:tabular-nums}
+.score div{background:var(--board);color:var(--board-ink);border-radius:4px;padding:6px 12px;text-align:center;min-width:72px}
+.score b{display:block;font-size:1.6rem;line-height:1;color:var(--lamp)}
+.score span{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase}
+.main{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){.main{grid-template-columns:minmax(0,1fr)}}
+.fieldbox{background:var(--board);border-radius:8px;overflow:hidden}
+.strip{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;color:var(--board-ink);font-family:var(--f-display);letter-spacing:.08em;text-transform:uppercase;font-size:.9rem}
+.strip .grp{display:flex;align-items:center;gap:8px}
+.dots{display:flex;gap:5px}
+.dot{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--board-ink);opacity:.8}
+.dot.on{background:var(--lamp);border-color:var(--lamp);opacity:1}
+.mini{width:30px;height:24px}
+.field svg{display:block;width:100%;height:auto}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-display);font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.tag .num{background:var(--def);color:#fff;border-radius:50%;width:22px;height:22px;display:inline-grid;place-items:center;letter-spacing:0;font-size:.85rem}
+.tagrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.kind{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-display);font-weight:700;font-size:.95rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:4px;border:1.5px solid currentColor}
+.kind svg{width:26px;height:14px}
+.kind.ground,.kind.bunt{color:var(--dirt2)}
+.kind.fly{color:var(--accent)}
+.kind.line{color:var(--good)}
+.kind.pitch{color:var(--muted)}
+.kind.regel{color:var(--run)}
+.kind.jugend{color:var(--accent)}
+.kind.lauf{color:var(--run)}
+.rules.jug .rule{border-top-color:var(--accent)}
+.src{display:block;margin-top:6px;font-size:.85rem;color:var(--muted)}
+.rules{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.rules h3{margin:0;font-family:var(--f-display);font-size:1.4rem;letter-spacing:.02em}
+.rules .intro{margin:0;color:var(--muted);max-width:68ch}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px}
+.rule{border-top:3px solid var(--run);background:var(--bg);border-radius:4px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.rule b{font-family:var(--f-display);font-size:1.05rem;letter-spacing:.03em;text-transform:uppercase}
+.rule p{margin:0}
+.rule small{color:var(--muted);font-size:.8rem}
+/* ---- Belohnungen, Spind, Shop ---- */
+.score .coinTile{font:inherit;font-family:var(--f-display);border:0;cursor:pointer;background:var(--board);color:var(--board-ink);border-radius:4px;padding:6px 12px;text-align:center;min-width:84px;box-shadow:inset 0 0 0 2px var(--lamp)}
+.score .coinTile b{display:flex;align-items:center;justify-content:center;gap:5px;font-size:1.6rem;line-height:1;color:var(--lamp)}
+.score .coinTile span{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase}
+.score .coinTile b span{font-size:inherit;letter-spacing:0}
+[hidden]{display:none!important}
+.coin{display:inline-block;width:.9em;height:.9em;border-radius:50%;background:var(--lamp);box-shadow:inset 0 0 0 .12em #b8860b;vertical-align:-.1em;flex:none}
+.pop{animation:pop .55s ease}
+@keyframes pop{0%{transform:scale(1)}35%{transform:scale(1.14)}100%{transform:scale(1)}}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);overflow-x:auto}
+.tab{font:inherit;font-family:var(--f-display);font-weight:700;font-size:1.15rem;letter-spacing:.06em;text-transform:uppercase;background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-2px;padding:8px 14px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab:focus-visible,.sw:focus-visible,.item button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.view{display:flex;flex-direction:column;gap:16px}
+.earn{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:8px;font-weight:600;color:var(--ink)}
+.earn small{font-weight:400;color:var(--muted)}
+.route{display:block;margin-top:10px;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:6px;font-size:.95rem;line-height:1.5}
+.route .rl{display:block;font-family:var(--f-display);font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.route .arr{color:var(--accent);font-weight:700;padding:0 2px}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--board);color:var(--board-ink);font-family:var(--f-display);font-size:1.15rem;letter-spacing:.04em;padding:10px 18px;border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.3);display:flex;align-items:center;gap:8px;transition:opacity .2s,transform .2s;z-index:20;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.locker{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){.locker{grid-template-columns:minmax(0,1fr)}}
+.lcol{display:flex;flex-direction:column;gap:16px;min-width:0}
+.stage{background:linear-gradient(to bottom,var(--board) 0 80%,var(--grass) 80% 100%);border-radius:8px;padding:12px 14px 14px;color:var(--board-ink);display:flex;flex-direction:column;gap:8px}
+.stageTop{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--f-display);letter-spacing:.1em;text-transform:uppercase;font-size:.9rem}
+.pvTag{background:var(--lamp);color:#1f2e24;border-radius:3px;padding:1px 8px;font-weight:700}
+.avatar{width:100%;max-width:250px;margin:0 auto}
+.avatar svg{display:block;width:100%;height:auto;border-radius:8px}
+.plate{display:flex;align-items:baseline;justify-content:center;gap:10px;font-family:var(--f-display);text-transform:uppercase;letter-spacing:.06em}
+.plate b{font-size:1.8rem;color:var(--lamp);line-height:1}
+.plate span{font-size:1.3rem;overflow-wrap:anywhere}
+.rankbar{height:8px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden}
+.rankbar i{display:block;height:100%;background:var(--lamp);width:0;transition:width .4s}
+.rankNext{margin:0;font-size:.85rem;text-align:center;opacity:.9}
+.ph{margin:0;font-family:var(--f-display);font-size:1.35rem;letter-spacing:.02em}
+.frow{display:grid;grid-template-columns:minmax(0,1fr) 90px;gap:10px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld label,.lbl{font-family:var(--f-display);font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.fld input{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+.sws{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.sw{width:32px;height:32px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.sw[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent)}
+.earnlist{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.earnlist li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--line);padding-bottom:6px}
+.earnlist b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.shopHead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.wallet{font-family:var(--f-display);font-size:1.2rem;display:inline-flex;align-items:center;gap:6px}
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:12px}
+.item{border:1.5px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px;background:var(--surface);min-width:0}
+.item.on{border-color:var(--accent)}
+.item .ic{background:var(--bg);border-radius:6px;display:grid;place-items:center;padding:8px}
+.item .ic svg{width:100%;max-width:150px;height:auto;display:block}
+.item .ic svg.tall{width:auto;height:130px;max-width:100%}
+.ihead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.item h4{margin:0;font-family:var(--f-display);font-size:1.15rem;line-height:1.1}
+.price{font-family:var(--f-display);font-weight:700;font-size:1.1rem;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.pill{font-size:.75rem;font-weight:600;border-radius:999px;padding:2px 8px;background:var(--accent);color:var(--accent-ink);white-space:nowrap}
+.pill.own{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.item .team{margin:0;font-size:.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:var(--f-display)}
+.item .desc{margin:0;font-size:.9rem}
+.item .spec{margin:0;font-size:.85rem;font-weight:600;font-variant-numeric:tabular-nums}
+.dbl{margin:0;font-size:.8rem;font-weight:600;padding-left:8px;border-left:3px solid var(--muted)}
+.dbl.ok{border-left-color:var(--good);color:var(--good)}
+.dbl.no{border-left-color:var(--bad);color:var(--bad)}
+.item .row{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:4px}
+.item .row .btn{padding:6px 12px;font-size:.9rem}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+@media (prefers-reduced-motion:reduce){.pop{animation:none}.toast,.rankbar i{transition:none}}
+h2{font-family:var(--f-display);font-weight:700;font-size:1.65rem;line-height:1.05;margin:0;text-wrap:balance}
+.q{font-size:1.08rem;font-weight:500;margin:0}
+.wait{color:var(--muted);font-style:italic;margin:0}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;gap:10px;align-items:flex-start;text-align:left;width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:6px;padding:10px 12px;cursor:pointer;transition:border-color .15s,background .15s}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:focus-visible,.btn:focus-visible,.chip:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.opt .k{font-family:var(--f-display);font-weight:700;min-width:1.2em;color:var(--muted)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--good);background:var(--good-bg)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.fb{border-radius:6px;padding:12px 14px;border-left:4px solid var(--good);background:var(--good-bg)}
+.fb.no{border-left-color:var(--bad);background:var(--bad-bg)}
+.fb strong{display:block;font-family:var(--f-display);font-size:1.15rem;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.fb p{margin:0}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:inherit;font-weight:600;border-radius:6px;padding:9px 16px;cursor:pointer;border:1.5px solid var(--accent);background:transparent;color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.filters{display:flex;flex-direction:column;gap:8px}
+.filters h3{margin:0;font-family:var(--f-display);font-size:.9rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:.9rem;display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 12px 5px 6px;cursor:pointer}
+.chip .n{background:var(--def);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-grid;place-items:center;font-family:var(--f-display);font-size:.8rem}
+.chip.all{padding-left:12px}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.note{color:var(--muted);font-size:.85rem;margin:0}
+.legend{display:flex;flex-wrap:wrap;gap:14px;padding:0 14px 10px;color:var(--board-ink);font-size:.8rem}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:50%;display:inline-block}
+@media (prefers-reduced-motion:reduce){.opt,.btn{transition:none}}
+/* ===== Vollbild-Layout: Training ohne Scrollen ===== */
+html,body{height:100%}
+body{margin:0;padding-block:0;overflow:hidden}
+.app{height:100%;max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:6px;padding-block:8px}
+.top{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:10px;flex:none}
+.top h1{min-width:0}
+.top h1{font-size:clamp(1.05rem,2.2vw + .5rem,2rem);line-height:1.05}
+.score{gap:5px;flex:none}
+.score div,.score .coinTile{padding:4px 9px;min-width:0}
+.score b,.score .coinTile b{font-size:1.15rem}
+.score span,.score .coinTile span{font-size:.6rem}
+.tabs{flex:none}
+.tab{font-size:.95rem;padding:5px 9px}
+@media (max-width:420px){.tab{font-size:.85rem;padding:5px 7px;letter-spacing:.03em}}
+.view{flex:1 1 auto;min-height:0}
+.view.scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:16px;padding-top:4px}
+.train{display:flex;flex-direction:column;gap:8px}
+.fieldbox{flex:1 1 auto;min-height:30%;display:flex;flex-direction:column}
+.field{flex:1 1 auto;min-height:0;position:relative}
+.field svg{position:absolute;inset:0;width:100%;height:100%}
+.strip{padding:4px 8px;font-size:.78rem;gap:8px;flex-wrap:nowrap}
+.fbtn{font:inherit;font-family:var(--f-display);letter-spacing:.06em;text-transform:uppercase;display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.1);color:var(--board-ink);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:3px 10px;cursor:pointer;min-width:0;max-width:52%}
+.fbtn svg{width:13px;height:13px;flex:none}
+.fbtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fbtn:focus-visible,.xbtn:focus-visible{outline:3px solid var(--lamp);outline-offset:2px}
+.panel{flex:0 1 auto;overflow-y:auto;padding:10px 12px;gap:7px}
+.train.done .fieldbox{min-height:22%}
+.tagrow{gap:6px}
+.tag{font-size:.72rem}
+.tag .num{width:19px;height:19px;font-size:.75rem}
+.kind{font-size:.72rem;padding:1px 7px;gap:4px}
+.kind svg{width:20px;height:11px}
+h2{font-size:1.2rem}
+.q{font-size:.97rem;line-height:1.35}
+.opts{gap:5px}
+.opt{padding:7px 10px;line-height:1.3}
+.fb{padding:8px 10px}
+.fb strong{font-size:1rem}
+.fb p{font-size:.9rem;line-height:1.4}
+.src{font-size:.78rem;margin-top:4px}
+.route{margin-top:6px;padding:5px 8px;font-size:.86rem;line-height:1.4}
+.earn{margin-top:5px;font-size:.88rem}
+.actions{gap:6px;flex-wrap:nowrap}
+.actions .btn{padding:7px 10px;flex:1 1 auto;white-space:nowrap}
+@media (max-height:780px){.train.done .tagrow{display:none}}
+@media (orientation:landscape) and (min-width:640px){
+  .train{flex-direction:row}
+  .fieldbox{flex:1.35 1 0;min-width:0;min-height:0!important}
+  .panel{flex:1 1 0;max-width:470px;max-height:none;min-width:280px}
+}
+@media (min-width:1000px) and (min-height:720px){
+  h2{font-size:1.5rem}.q{font-size:1.05rem}.opt{padding:9px 12px}.panel{padding:16px;gap:10px}
+  .score b,.score .coinTile b{font-size:1.5rem}.score span,.score .coinTile span{font-size:.68rem}.tab{font-size:1.1rem}.strip{font-size:.88rem;padding:6px 12px}
+}
+@media (orientation:landscape) and (max-height:540px){
+  .app{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);column-gap:14px;row-gap:6px;padding-block:6px}
+  .top{grid-column:1;grid-row:1}.tabs{grid-column:2;grid-row:1;justify-content:flex-end;border-bottom:0}
+  .view{grid-column:1 / -1;grid-row:2}
+  .top h1{font-size:1rem}
+  .train.done .tagrow{display:none}
+  .fieldbox{flex:1 1 0!important}.panel{flex:1.2 1 0!important;max-width:none!important}
+}
+
+/* ===== Startbildschirm ===== */
+#intro{position:fixed;inset:0;z-index:60;background:var(--board);display:flex;align-items:center;justify-content:center;overflow:hidden;transition:opacity .45s}
+#intro.out{opacity:0}
+#introSvg{display:block;width:100%;height:100%}
+.introCap{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));text-align:center;color:var(--board-ink);font-family:var(--f-display);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:clamp(.9rem,2.4vw,1.25rem);transition:opacity .3s}
+#introSkip{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom,0px));right:max(16px,env(safe-area-inset-right,0px));font:inherit;font-family:var(--f-display);letter-spacing:.1em;text-transform:uppercase;font-size:.85rem;background:rgba(255,255,255,.1);color:var(--board-ink);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:6px 14px;cursor:pointer}
+.introEnd{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:28px;padding:calc(env(safe-area-inset-top,0px) + 8vh) max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));pointer-events:none}
+.introEnd .introGo{margin-block:auto}
+.introTitle{margin:0;text-align:center;font-family:var(--f-display);font-weight:700;color:var(--board-ink);font-size:clamp(2.6rem,11vw,6.5rem);line-height:.92;text-transform:uppercase;letter-spacing:.01em;text-shadow:0 4px 28px rgba(0,0,0,.7);opacity:0;transform:scale(.8);transition:opacity .6s,transform .6s cubic-bezier(.2,1.4,.4,1);text-wrap:balance}
+.introTitle span{display:block;color:var(--lamp)}
+.introGo{pointer-events:auto;font:inherit;font-family:var(--f-display);font-weight:700;font-size:clamp(1.4rem,5vw,2.2rem);letter-spacing:.06em;text-transform:uppercase;background:var(--lamp);color:#1f2e24;border:0;border-radius:999px;padding:14px 46px;cursor:pointer;box-shadow:0 6px 0 #b8860b,0 10px 30px rgba(0,0,0,.45);opacity:0;transform:translateY(16px);transition:opacity .5s .25s,transform .5s .25s}
+.introGo:active{transform:translateY(4px);box-shadow:0 2px 0 #b8860b}
+.introGo:focus-visible,#introSkip:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#intro.end .introTitle{opacity:1;transform:scale(1)}
+#intro.end .introGo{opacity:1;transform:none}
+#intro.end .introCap,#intro.end #introSkip{opacity:0;pointer-events:none}
+@keyframes qpop{0%{opacity:0;transform:scale(0) rotate(-20deg)}60%{opacity:1;transform:scale(1.25) rotate(8deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+.qm{transform-box:fill-box;transform-origin:center;animation:qpop .5s ease-out both}
+#intro.end .qm{opacity:.22!important;transition:opacity .6s}
+/* Spind und Shop: Trainings-Panel-Regeln nicht übernehmen */
+.locker .panel{flex:none!important;max-width:none!important;max-height:none!important;min-width:0!important;overflow:visible!important;padding:16px;gap:12px}
+/* Regelwissen */
+.rulesWrap{display:flex;flex-direction:column;gap:14px}
+.quizStart{display:flex;flex-direction:column;gap:8px}
+.quizStart h3{margin:0;font-family:var(--f-display);font-size:1rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+/* Overlays */
+.sheet{position:fixed;inset:0;z-index:30;background:rgba(10,16,12,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheetBox{background:var(--surface);color:var(--ink);width:100%;max-width:640px;max-height:90%;overflow-y:auto;border-radius:14px 14px 0 0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+@media (min-width:700px){.sheet{align-items:center}.sheetBox{border-radius:12px}}
+.sheetHead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sheetHead h3{margin:0;font-family:var(--f-display);font-size:1.35rem}
+.xbtn{font:inherit;font-size:1.1rem;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;flex:none}
+.fgrp{display:flex;flex-direction:column;gap:6px}
+.fgrp h4{margin:0;font-family:var(--f-display);font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.legend2{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.82rem;color:var(--muted)}
+.legend2 span{display:inline-flex;align-items:center;gap:6px}
+.legend2 i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.duties{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.duties li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;align-items:start;padding:6px 8px;border-radius:6px;background:var(--bg)}
+.duties li.me{background:var(--good-bg);outline:1.5px solid var(--good)}
+.duties .n{background:var(--def);color:#fff;border-radius:50%;width:24px;height:24px;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:.85rem}
+.duties b{display:block;font-family:var(--f-display);font-size:.95rem;letter-spacing:.03em}
+.duties span{font-size:.9rem;line-height:1.35}
+
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>Coach Tobys Baseball App</h1>
+    <div class="score" aria-live="polite">
+      <div title="Richtig beantwortet von gespielt"><b id="sRight">0/0</b><span>Richtig</span></div>
+      <button type="button" class="coinTile" id="coinBtn" aria-label="Coins – zum Shop"><b><i class="coin"></i><span id="sCoins">0</span></b><span>Coins</span></button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Bereiche">
+    <button type="button" class="tab" role="tab" id="tabTrain" aria-selected="true" aria-controls="viewTrain">Training</button>
+    <button type="button" class="tab" role="tab" id="tabRules" aria-selected="false" aria-controls="viewRules">Regelwissen</button>
+    <button type="button" class="tab" role="tab" id="tabLocker" aria-selected="false" aria-controls="viewLocker">Spieler &amp; Shop</button>
+  </nav>
+
+  <div id="viewTrain" class="view train" role="tabpanel" aria-labelledby="tabTrain">
+    <div class="fieldbox">
+      <div class="strip">
+        <button type="button" class="fbtn" id="filterBtn" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12l-4.5 5.5V13l-3 1.5V8.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span id="filterLbl">Alles</span></button>
+        <div class="grp"><span id="sitNo">1/1</span></div>
+        <div class="grp"><svg class="mini" viewBox="0 0 30 24" aria-label="Runner">
+            <rect id="m2" x="11" y="2" width="8" height="8" transform="rotate(45 15 6)" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <rect id="m3" x="2" y="11" width="8" height="8" transform="rotate(45 6 15)" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <rect id="m1" x="20" y="11" width="8" height="8" transform="rotate(45 24 15)" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <span>Outs</span><div class="dots"><i class="dot" id="o1"></i><i class="dot" id="o2"></i></div></div>
+      </div>
+      <div class="field">
+        <svg id="field" viewBox="0 40 400 340" role="img" aria-label="Baseballfeld von oben mit Spielern, Runnern und Ball">
+          <defs>
+            <pattern id="mow" width="40" height="40" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="40" height="40" fill="var(--grass)"/><rect width="20" height="40" fill="var(--grass2)"/>
+            </pattern>
+          </defs>
+          <rect x="0" y="40" width="400" height="340" fill="var(--board)"/>
+          <path d="M200 352 L0 152 L5 145 A247.6 247.6 0 0 1 395 145 L400 152 Z" fill="url(#mow)"/>
+          <path d="M200 362 L112 274 A84 84 0 0 1 288 274 Z" fill="var(--dirt)"/>
+          <path d="M200 330 L156 286 L200 242 L244 286 Z" fill="var(--grass)"/>
+          <circle cx="200" cy="288" r="9" fill="var(--dirt)"/>
+          <rect x="197" y="287" width="6" height="1.6" fill="var(--chalk)"/>
+          <circle cx="200" cy="346" r="15" fill="var(--dirt)"/>
+          <path d="M200 340 L-5 135 M200 340 L405 135" stroke="var(--chalk)" stroke-width="1.4" fill="none"/>
+          <path d="M5 145 A247.6 247.6 0 0 1 395 145" stroke="var(--dirt2)" stroke-width="5" fill="none"/>
+          <g fill="var(--chalk)">
+            <rect x="250" y="280" width="9" height="9" transform="rotate(45 254.5 284.5)"/>
+            <rect x="195.5" y="225.5" width="9" height="9" transform="rotate(45 200 230)"/>
+            <rect x="140.5" y="280.5" width="9" height="9" transform="rotate(45 145 285)"/>
+            <path d="M195 336 h10 v4 l-5 5 l-5 -5 z"/>
+          </g>
+          <g font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="9" fill="var(--chalk)" opacity=".75" letter-spacing="1">
+            <text x="268" y="298">1B</text><text x="207" y="226">2B</text><text x="120" y="298">3B</text>
+          </g>
+          <g id="layerPaths"></g>
+          <g id="layerRunners"></g>
+          <g id="layerFielders"></g>
+          <ellipse id="shadow" rx="3.5" ry="2" fill="#000" opacity=".35"/>
+          <g id="ballG"><circle id="ball" r="3.4" fill="#fff" stroke="#b8102a" stroke-width=".9"/></g>
+          <g id="stopG" hidden>
+            <rect x="12" y="52" width="66" height="26" rx="3" fill="var(--run)"/>
+            <text x="45" y="70" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="17" fill="#fff" letter-spacing="2">STOPP</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <section class="panel" id="panel" aria-live="polite">
+      <div class="tagrow"><div class="tag" id="posTag"></div><span class="kind" id="kind"></span></div>
+      <h2 id="title"></h2>
+      <p class="wait" id="wait">Ball ist im Spiel …</p>
+      <p class="q" id="question" hidden></p>
+      <div class="opts" id="opts"></div>
+      <div class="fb" id="fb" hidden><strong id="fbH"></strong><p id="fbT"></p></div>
+      <div class="actions">
+        <button class="btn" id="replay" type="button">Nochmal</button>
+        <button class="btn" id="dutyBtn" type="button" hidden>Alle 9 Spieler</button>
+        <button class="btn primary" id="next" type="button" hidden>Weiter</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="viewRules" class="view scroll" role="tabpanel" aria-labelledby="tabRules" hidden>
+    <div class="rulesWrap">
+      <section class="quizStart">
+        <h3>Regeln als Quiz üben</h3>
+        <div class="chips">
+          <button type="button" class="chip all" data-quiz="regel">Deutsche Baseball Liga</button>
+          <button type="button" class="chip all" data-quiz="jugend">Jugendligen Berlin-Brandenburg</button>
+          <button type="button" class="chip all" data-quiz="lauf">Baserunning</button>
+        </div>
+      </section>
+  <section class="rules" aria-labelledby="rulesH">
+    <h3 id="rulesH">Regelwissen Deutsche Baseball Liga · Saison 2026</h3>
+    <p class="intro">Die wichtigsten Sonderregeln der höchsten deutschen Liga. Grundlage sind die Bundesspielordnung (BuSpO) des DBV und die Durchführungsordnung der DBL (DBL-DVO), jeweils Stand 2026. Für alles Übrige gelten die Official Baseball Rules (OBR). Die Ordnungen ändern sich jedes Jahr, im Zweifel gilt die aktuelle Fassung des DBV.</p>
+    <div class="rgrid">
+      <div class="rule"><b>Name der Liga</b><p>Die höchste Liga heißt seit 2026 „Deutsche Baseball Liga“ (DBL), vorher 1. Bundesliga.</p><small>BuSpO 2026, Art. 2.1.02</small></div>
+      <div class="rule"><b>Saisonmodus</b><p>Gruppen Nord und Süd mit Hin- und Rückrunde. Danach spielen die Top 3 jeder Gruppe eine Interleague-Runde, die übrigen Teams eine Wildcard-Runde. Viertelfinale, Halbfinale und Finale jeweils Best-of-5.</p><small>DBL-DVO 2026, Art. 11.3.08</small></div>
+      <div class="rule"><b>Spieldauer</b><p>Jedes Spiel geht über 9 Innings. Ein Spieltag besteht aus zwei Einzelspielen an aufeinanderfolgenden Tagen. Doubleheader nur an Nachholterminen und einzelnen Feiertagen.</p><small>DBL-DVO 2026, Art. 11.3.08</small></div>
+      <div class="rule"><b>Extra Innings</b><p>Steht es nach dem letzten regulären Inning unentschieden, beginnt jedes Extra-Inning mit Läufern auf der 1. und 2. Base und 0 Outs. Die Läufer sind die beiden Spieler, die in der Batting Order direkt vor dem Batter stehen.</p><small>DBL-DVO 2026, Art. 11.3.02</small></div>
+      <div class="rule"><b>Ausländer auf dem Feld</b><p>Höchstens zwei Ausländer gleichzeitig. Pitcht ein Ausländer und stehen schon zwei weitere Ausländer auf dem Feld, muss ein Deutscher Designated Hitter sein. Defensiv sind dann drei Ausländer erlaubt, offensiv bleiben es zwei.</p><small>DBL-DVO 2026, Art. 10.2.02</small></div>
+      <div class="rule"><b>Pitcher-Regel</b><p>Im ersten Spiel eines Spieltags werfen nur deutsche Pitcher. Im zweiten Spiel darf neben Deutschen ein ausländischer Pitcher eingesetzt werden. In den Playoffs gilt das Gleiche: Spiel 1, 3 und 5 nur Deutsche, Spiel 2 und 4 ein Ausländer möglich.</p><small>DBL-DVO 2026, Art. 10.2.03</small></div>
+      <div class="rule"><b>Shortstop und Catcher</b><p>Auf den Positionen Shortstop und Catcher muss ständig mindestens ein deutscher Spieler stehen.</p><small>DBL-DVO 2026, Art. 10.3.01</small></div>
+      <div class="rule"><b>Schläger</b><p>Alle Spieler schlagen mit Holz- oder holzähnlichen Schlägern. Ein nicht zugelassener Schläger kostet 100 € Strafe.</p><small>DBL-DVO 2026, Art. 4.3.04 i. V. m. Anhang 1 BuSpO</small></div>
+      <div class="rule"><b>Helmpflicht</b><p>Batter, Runner und Base Coaches tragen Helm. In der Erwachsenenliga reicht ein Ohrenschutz auf der dem Pitcher zugewandten Seite. Der Catcher trägt Helm und Maske, auch beim Aufwärmen und im Bullpen.</p><small>BuSpO, Art. 4.3.01</small></div>
+      <div class="rule"><b>Playoff-Spielberechtigung</b><p>Ausländer brauchen mindestens 9 tatsächliche Einsätze in der regulären Saison, Spieler mit Status A bis D mindestens 4. Nur auf dem Lineup zu stehen zählt nicht.</p><small>DBL-DVO 2026, Art. 10.3.01 und 9.1.03</small></div>
+      <div class="rule"><b>Gleichstand in der Tabelle</b><p>Reihenfolge: 1. direkter Vergleich, 2. Team Quality Balance (TQB), 3. Earned-Run-TQB, 4. Team Batting Average, 5. Münzwurf. Geht es um eine Ligameisterschaft, wird ein Entscheidungsspiel ausgetragen.</p><small>BuSpO 2026, Anhang 3</small></div>
+    </div>
+  </section>
+
+  <section class="rules jug" aria-labelledby="rulesJ">
+    <h3 id="rulesJ">Regelwissen Jugendligen Berlin-Brandenburg · Saison 2026</h3>
+    <p class="intro">Sonderregeln des Baseball- und Softball-Verbands Berlin/Brandenburg (BSVBB) für Junioren, Jugend, Schüler, Coach-Pitch und Kinderliga. Grundlage ist die Durchführungsverordnung (DVO) 2026 und das Memo Spielbetrieb 2026. Das Memo ist nur eine Übersicht, verbindlich sind DVO, BuSpO und OBR.</p>
+    <div class="rgrid">
+      <div class="rule"><b>Altersklassen 2026</b><p>Schüler: Jahrgänge 2014–2017. Jugend: 2011–2013. Junioren: 2008–2010. Coach-Pitch: 2016 und 2017.</p><small>Memo 2026, Abschn. 2.11; DVO Art. 12.1.04.05</small></div>
+      <div class="rule"><b>Ligen</b><p>Schüler-Landesliga und Schüler-Verbandsliga, Jugend-Landesliga und Jugend-Verbandsliga, Juniorenliga, Coach-Pitch und Kinderliga. Die Jugend-Verbandsliga spielt auf dem Großfeld, die Landesliga mit Pony-Infield. Kein Designated Hitter.</p><small>DVO 2026, Art. 12.1.01</small></div>
+      <div class="rule"><b>Spieldauer</b><p>Schüler und Jugend: 7 Innings, max. 2 Stunden. Junioren: 7 Innings, max. 2,5 Stunden. Coach-Pitch: 7 Innings, max. 1,5 Stunden. Doubleheader 2 × 5 Innings, außer Verbandsliga.</p><small>DVO 2026, Art. 11.3.01</small></div>
+      <div class="rule"><b>Pitcher-Limit</b><p>Höchstens so viele Batter pro Spieltag (Freitag bis Sonntag zusammen): Schüler 18, Jugend 21, Junioren 25. Danach auswechseln oder Position wechseln.</p><small>DVO 2026, Art. 12.1.04.02</small></div>
+      <div class="rule"><b>5-Run-Rule</b><p>Jugend-Landesliga: Seitenwechsel sofort nach dem 5. Run eines Halbinnings. Ein Homerun über den Zaun zählt alle Runs, höchstens 8. Wer vor dem letzten Inning mehr als 8 Runs vorn liegt, gewinnt vorzeitig.</p><small>DVO 2026, Art. 12.1.04.03</small></div>
+      <div class="rule"><b>Mercy-Rule bei 5 Innings</b><p>15 Runs Vorsprung nach dem 2. Inning oder 10 Runs nach dem 3. oder 4. Inning beenden das Spiel.</p><small>DVO 2026, Art. 11.3.04</small></div>
+      <div class="rule"><b>7 oder 8 Spieler</b><p>Nachwuchsteams dürfen mit 7 oder 8 antreten. Bei 8 ist die 9. Schlagposition automatisch aus, bei 7 die 5. und 9.</p><small>DVO 2026, Art. 11.4.01</small></div>
+      <div class="rule"><b>Springer</b><p>Aus der Landesliga in die Verbandsliga: höchstens 3 Springer gleichzeitig, jeder höchstens zweimal. Beim dritten Einsatz ist er fest hochgemeldet.</p><small>DVO 2026, Art. 12.1.02</small></div>
+      <div class="rule"><b>Metallspikes</b><p>Im Nachwuchs nur beim BSVBB-Pokal erlaubt, sonst 50 € Strafe.</p><small>DVO 2026, Art. 4.2.03</small></div>
+      <div class="rule"><b>Schläger Junioren</b><p>Holzschläger von der BuSpO-Liste. Jugendliche Springer und nicht für die DM gemeldete Junioren dürfen Aluminium nutzen.</p><small>DVO 2026, Art. 4.3.04</small></div>
+      <div class="rule"><b>Schüler-Verbandsliga</b><p>Kein Sidetoss. Nach dem 4. Ball gibt es einen Walk.</p><small>Memo 2026, Abschn. 2.11</small></div>
+      <div class="rule"><b>Coach-Pitch</b><p>Der Coach wirft aus 10–14 m. Höchstens 5 Pitches, jeder zählt als Strike. Keine Balls, keine Walks, keine Bunts. Kein Lead, Runner starten erst nach dem Treffer. Trifft der Ball den Coach, ist es Foul. Bei einem Overthrow ins Aus gibt es eine Base.</p><small>DVO 2026, Art. 12.1.04.05</small></div>
+      <div class="rule"><b>Kinderliga (Tee)</b><p>Basen 18,29 m, Pitcher 14,02 m. Kein Stehlen, keine Bunts, kein Infield Fly. Feldspieler außer dem Catcher stehen vor dem Schlag außerhalb von 14,02 m. Doublebase an der 1.</p><small>DVO 2026, Art. 12.1.04.06</small></div>
+    </div>
+  </section>
+    </div>
+  </div>
+
+  <div id="viewLocker" class="view scroll" role="tabpanel" aria-labelledby="tabLocker" hidden>
+    <div class="locker">
+      <div class="lcol">
+        <section class="stage" aria-label="Dein Avatar">
+          <div class="stageTop"><span id="rankName">Rookie</span><span class="pvTag" id="pvTag" hidden>Vorschau</span></div>
+          <div class="avatar" id="avatar"></div>
+          <div class="plate"><b id="plNum">#7</b><span id="plName">Spieler</span></div>
+          <div class="rankbar" aria-hidden="true"><i id="rankFill"></i></div>
+          <p class="rankNext" id="rankNext"></p>
+        </section>
+        <section class="panel">
+          <h3 class="ph">Spieler gestalten</h3>
+          <div class="frow">
+            <div class="fld"><label for="avName">Name</label><input id="avName" maxlength="14" autocomplete="off"></div>
+            <div class="fld"><label for="avNum">Nummer</label><input id="avNum" type="number" min="0" max="99" inputmode="numeric"></div>
+          </div>
+          <div><span class="lbl">Hautfarbe</span><div class="sws" id="swSkin"></div></div>
+          <div><span class="lbl">Haarfarbe</span><div class="sws" id="swHair"></div></div>
+          <div><span class="lbl">Frisur</span><div class="chips" id="swStyle"></div></div>
+        </section>
+        <section class="panel">
+          <h3 class="ph">So verdienst du Coins</h3>
+          <ul class="earnlist">
+            <li><span>Richtige Antwort</span><b>+10</b></li>
+            <li><span>Situation zum ersten Mal gelöst</span><b>+15</b></li>
+            <li><span>Serie: 3 richtig in Folge</span><b>+10</b></li>
+            <li><span>Serie: 5 richtig in Folge</span><b>+25</b></li>
+            <li><span>Serie: 10 richtig in Folge</span><b>+50</b></li>
+            <li><span>Danach alle 5 weiteren in Folge</span><b>+75</b></li>
+          </ul>
+          <p class="note">Eine falsche Antwort beendet die Serie. Mit den verdienten Coins steigst du im Rang auf: Rookie, Stammspieler, Starter, All-Star, MVP, Hall of Fame.</p>
+        </section>
+      </div>
+      <section class="panel">
+        <div class="shopHead"><h3 class="ph">Pro Shop</h3><span class="wallet"><i class="coin"></i><b id="wallet">0</b> Coins</span></div>
+        <div class="chips" id="shopTabs" role="group" aria-label="Kategorie"></div>
+        <div class="items" id="items"></div>
+        <p class="note">Alle Teams sind erfunden. Bats und Schuhe zeigen echte Typen, Holzarten und Maße, aber keine Hersteller oder Logos.</p>
+      </section>
+    </div>
+  </div>
+</div>
+<div id="intro" role="dialog" aria-modal="true" aria-label="Startbildschirm">
+  <svg id="introSvg" viewBox="0 40 400 340" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+  <div class="introCap" id="introCap"></div>
+  <div class="introEnd">
+    <h2 class="introTitle">Coach Tobys <span>Baseball App</span></h2>
+    <button type="button" class="introGo" id="introGo">Let’s go!</button>
+  </div>
+  <button type="button" id="introSkip">Überspringen</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="sheet" id="filterSheet" role="dialog" aria-modal="true" aria-labelledby="fsH" hidden>
+  <div class="sheetBox">
+    <div class="sheetHead"><h3 id="fsH">Was willst du üben?</h3><button type="button" class="xbtn" data-close aria-label="Schließen">✕</button></div>
+    <p class="note" id="progLine"><b id="sMaster">0</b> <span id="sMasterL">von 0 gelernt</span> · <span id="sTotal">0</span> gespielt · <span id="qCount">0</span> Fragen passen zum Filter</p>
+    <div class="fgrp"><h4>Kategorie</h4><div class="chips" id="chipsKind"></div></div>
+    <div class="fgrp"><h4>Position</h4><div class="chips" id="chips"></div></div>
+    <div class="fgrp"><h4>Runner</h4><div class="chips" id="chipsRun"></div></div>
+    <div class="fgrp"><h4>Outs</h4><div class="chips" id="chipsOut"></div></div>
+    <div class="fgrp"><h4>Fragetyp</h4><div class="chips" id="chipsAsk"></div></div>
+    <div class="legend2">
+      <span><i style="background:var(--def)"></i>Defense mit Positionsnummer</span>
+      <span><i style="background:var(--run)"></i>Runner und Batter-Runner</span>
+      <span><i style="background:#fff;border:1.5px solid #b8102a"></i>Ball</span>
+      <span>Gepunktete Spur: Groundball · Bogen: Fly Ball, gelber Kreis = Landepunkt</span>
+      <span>Tastatur: 1–4 antworten, Enter weiter</span>
+    </div>
+    <button type="button" class="btn primary" data-close>Los geht’s</button>
+  </div>
+</div>
+<div class="sheet" id="dutySheet" role="dialog" aria-modal="true" aria-labelledby="dsH" hidden>
+  <div class="sheetBox">
+    <div class="sheetHead"><h3 id="dsH">Was alle neun Spieler tun</h3><button type="button" class="xbtn" data-close aria-label="Schließen">✕</button></div>
+    <p class="note" id="dutySit"></p>
+    <ol class="duties" id="dutyList"></ol>
+    <button type="button" class="btn primary" data-close>Zurück zur Situation</button>
+  </div>
+</div>
+
+<script>
+const B={H:[200,340],'1B':[255,285],'2B':[200,230],'3B':[145,285]};
+const HOME={P:[200,288],C:[200,356],'1B':[263,263],'2B':[231,222],SS:[169,222],'3B':[137,263],LF:[95,152],CF:[200,108],RF:[305,152]};
+const POS={P:[1,'Pitcher'],C:[2,'Catcher'],'1B':[3,'First Baseman'],'2B':[4,'Second Baseman'],'3B':[5,'Third Baseman'],SS:[6,'Shortstop'],LF:[7,'Left Fielder'],CF:[8,'Center Fielder'],RF:[9,'Right Fielder']};
+const ORDER=['P','C','1B','2B','3B','SS','LF','CF','RF'];
+const KIND={ground:'Groundball',fly:'Fly Ball',line:'Line Drive',bunt:'Bunt',pitch:'Pitch-Situation',regel:'Regelwissen',jugend:'Jugendregeln',lauf:'Baserunning'};
+const KICON={ground:'<svg viewBox="0 0 26 14"><line x1="1" y1="11" x2="25" y2="11" stroke="currentColor" stroke-width="2.2" stroke-dasharray="1 4" stroke-linecap="round"/></svg>',
+  bunt:'<svg viewBox="0 0 26 14"><line x1="1" y1="11" x2="12" y2="11" stroke="currentColor" stroke-width="2.2" stroke-dasharray="1 3" stroke-linecap="round"/></svg>',
+  fly:'<svg viewBox="0 0 26 14"><path d="M1 13 Q13 -9 25 13" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  line:'<svg viewBox="0 0 26 14"><path d="M1 12 Q13 4 25 10" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 2"/></svg>',
+  pitch:'',
+  lauf:'<svg viewBox="0 0 26 14"><path d="M2 11 L10 11 M6 7 L16 7 M16 3 L24 7 L16 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  jugend:'<svg viewBox="0 0 26 14"><text x="13" y="12" text-anchor="middle" font-size="13" font-weight="700" fill="currentColor" font-family="Georgia,serif">J</text></svg>',
+  regel:'<svg viewBox="0 0 26 14"><text x="13" y="12" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor" font-family="Georgia,serif">§</text></svg>'};
+const kindOf=s=>s.kind||(s.hit?s.hit.type:'pitch');
+
+/* run: Fortschritt in Bases für [Batter, Runner 1, Runner 2, Runner 3]; null = kein Batter-Runner */
+const S=[
+{id:'ss0',pos:'SS',title:'Groundball zum Shortstop',runners:[0,0,0],outs:0,
+ hit:{type:'ground',to:[167,228],dur:1100},run:[.55,0,0,0],
+ q:'Der Shortstop hat den Ball. Wohin wirft er?',
+ opts:['Zur 1. Base','Zur 2. Base','Ball behalten','Zum Home Plate'],ok:0,
+ why:'Ohne Runner gibt es nur ein mögliches Force-Out: den Batter-Runner an der 1. Base (6-3).',moves:{},throws:['1B']},
+{id:'3b0',pos:'3B',title:'Groundball zum Third Baseman',runners:[0,0,0],outs:1,
+ hit:{type:'ground',to:[139,270],dur:900},run:[.5,0,0,0],
+ q:'Keine Runner. Wohin wirft der Third Baseman?',
+ opts:['Zur 2. Base','Zur 1. Base','Ball zum Pitcher'],ok:1,
+ why:'Einziges Force-Out ist der Batter-Runner an der 1. (5-3). Es ist der längste Wurf im Infield, deshalb braucht der Third Baseman den stärksten Arm.',moves:{},throws:['1B']},
+{id:'ss1',pos:'SS',title:'Groundball zum Shortstop, Runner auf 1',runners:[1,0,0],outs:0,
+ hit:{type:'ground',to:[167,228],dur:1100},run:[.55,.45,0,0],
+ q:'Runner auf der 1. Base, 0 Outs. Wohin wirft der Shortstop?',
+ opts:['Zur 1. Base','Zur 2. Base – Double Play einleiten','Zur 3. Base'],ok:1,
+ why:'Erst das Force-Out am Lead-Runner. Der Second Baseman deckt die 2., tritt die Base und wirft weiter zur 1.: 6-4-3 Double Play.',moves:{'2B':'2B'},throws:['2B','1B']},
+{id:'ss2',pos:'SS',title:'Groundball zum Shortstop, Runner auf 2',runners:[0,1,0],outs:0,
+ hit:{type:'ground',to:[167,228],dur:1100},run:[.55,0,.12,0],
+ q:'Runner auf der 2. Base. Wohin wirft der Shortstop?',
+ opts:['Zur 3. Base – Runner abfangen','Zur 1. Base, vorher den Runner mit einem Blick halten','Zur 2. Base','Zum Home Plate'],ok:1,
+ why:'Der Runner auf der 2. ist nicht forced, er muss nicht laufen. Ein Out an der 3. wäre nur per Tag-Out möglich und riskant. Der Shortstop schaut ihn kurz an, damit er nicht startet, und nimmt das sichere Out an der 1. (6-3).',moves:{},throws:['1B']},
+{id:'ss12',pos:'SS',title:'Groundball zum Shortstop, Runner auf 1 und 2',runners:[1,1,0],outs:0,
+ hit:{type:'ground',to:[167,228],dur:1100},run:[.55,.45,.45,0],
+ q:'Runner auf 1 und 2, 0 Outs. Wohin wirft der Shortstop?',
+ opts:['Zur 3. Base','Zur 2. Base – Double Play','Zur 1. Base','Zum Home Plate'],ok:1,
+ why:'Alle Runner sind forced. Der 6-4-3 Double Play über die 2. ist der sicherste Weg zu zwei Outs, weil der Wurf von der 2. zur 1. kurz ist. Über die 3. wäre der zweite Wurf viel länger.',moves:{'2B':'2B'},throws:['2B','1B']},
+{id:'3b123',pos:'3B',title:'Groundball zum Third Baseman, Bases loaded',runners:[1,1,1],outs:0,
+ hit:{type:'ground',to:[139,270],dur:900},run:[.5,.4,.4,.4],
+ q:'Bases loaded, 0 Outs. Wohin wirft der Third Baseman?',
+ opts:['Selbst die 3. Base treten','Zum Home Plate – Force-Out','Zur 1. Base','Zur 2. Base'],ok:1,
+ why:'An jeder Base ist ein Force-Out möglich. Am wichtigsten ist Home, denn sonst zählt ein Run. Der Catcher tritt die Platte und wirft zur 1.: 5-2-3 Double Play.',moves:{},throws:['H','1B']},
+{id:'3b2o',pos:'3B',title:'Groundball zum Third Baseman, 2 Outs',runners:[0,1,0],outs:2,
+ hit:{type:'ground',to:[139,270],dur:900},run:[.5,0,.6,0],
+ q:'2 Outs, Runner auf der 2. Wohin wirft der Third Baseman?',
+ opts:['Zur 1. Base','Selbst den Runner taggen','Zum Home Plate','Zur 2. Base'],ok:0,
+ why:'Mit 2 Outs reicht ein Out, um das Inning zu beenden. Der Runner auf der 2. ist nicht forced. Das sicherste Out ist der Batter-Runner an der 1. (5-3).',moves:{},throws:['1B']},
+{id:'2b1',pos:'2B',title:'Groundball zum Second Baseman, Runner auf 1',runners:[1,0,0],outs:1,
+ hit:{type:'ground',to:[233,228],dur:1000},run:[.55,.45,0,0],
+ q:'Runner auf der 1., 1 Out. Wohin wirft der Second Baseman?',
+ opts:['Zur 2. Base','Zur 1. Base','Zur 3. Base'],ok:0,
+ why:'Force-Out am Lead-Runner. Der Shortstop deckt die 2., der Second Baseman macht einen kurzen Toss. Weiter zur 1.: 4-6-3 Double Play, Inning vorbei.',moves:{SS:'2B'},throws:['2B','1B']},
+{id:'2bline',pos:'2B',title:'Line Drive zum Second Baseman',runners:[1,0,0],outs:1,
+ hit:{type:'line',to:[233,222],dur:650},run:[.3,.55,0,0],
+ q:'Line Drive direkt gefangen. Der Runner auf der 1. war schon losgelaufen. Wohin wirft der Second Baseman?',
+ opts:['Ball behalten, der Batter ist ja out','Zur 2. Base','Zur 1. Base – der Runner muss zurück'],ok:2,
+ why:'Nach einem gefangenen Ball muss jeder Runner zu seiner Base zurück (Tag-up). Ist der Ball vor ihm an der 1., ist er out: 4-3 Double Play.',moves:{},throws:['1B']},
+{id:'2bsteal',pos:'2B',title:'Steal der 2. Base',runners:[1,0,0],outs:0,
+ hit:null,pitchTo:[200,354],run:[null,.6,0,0],
+ q:'Der Runner stiehlt die 2. Base, der Batter ist Rechtshänder. Wer deckt die 2.?',
+ opts:['Shortstop','Second Baseman','Pitcher','Center Fielder'],ok:1,
+ why:'Ein Rechtshänder schlägt meist nach links. Deshalb bleibt der Shortstop in seinem Bereich und der Second Baseman deckt. Bei einem Linkshänder ist es umgekehrt. Die beiden sprechen das vorher per Zeichen ab.',moves:{'2B':'2B'},throws:['2B']},
+{id:'1b0',pos:'1B',title:'Groundball zum First Baseman',runners:[0,0,0],outs:0,
+ hit:{type:'ground',to:[237,250],dur:1000},run:[.55,0,0,0],
+ q:'Der First Baseman ist weit weg von seiner Base. Wer deckt die 1. Base?',
+ opts:['Second Baseman','Pitcher','Catcher','Right Fielder'],ok:1,
+ why:'Bei jedem Ball auf die rechte Seite des Infields läuft der Pitcher sofort zur 1. Base. Der First Baseman wirft ihm den Ball zu (3-1).',moves:{P:'1B'},throws:['1B']},
+{id:'1b1',pos:'1B',title:'Groundball zum First Baseman, Runner auf 1',runners:[1,0,0],outs:0,
+ hit:{type:'ground',to:[250,258],dur:900},run:[.5,.45,0,0],
+ q:'Runner auf der 1., 0 Outs. Wohin wirft der First Baseman?',
+ opts:['Selbst die 1. Base treten','Zur 2. Base','Zum Home Plate'],ok:1,
+ why:'Erst zur 2. auf den Lead-Runner, dort deckt der Shortstop. Danach geht der Ball zurück zur 1., die der Pitcher deckt: 3-6-1 Double Play.',moves:{SS:'2B',P:'1B'},throws:['2B','1B']},
+{id:'p1',pos:'P',title:'Comebacker zum Pitcher, Runner auf 1',runners:[1,0,0],outs:0,
+ hit:{type:'ground',to:[198,294],dur:600},run:[.4,.35,0,0],
+ q:'Ball direkt zum Pitcher, Runner auf der 1. Wohin wirft er?',
+ opts:['Zur 1. Base','Zur 2. Base','Zum Home Plate'],ok:1,
+ why:'Force-Out am Lead-Runner. Bei Bällen zum Pitcher deckt meist der Shortstop die 2., weil er auf die Base zuläuft und gut zur 1. weiterwerfen kann: 1-6-3 Double Play.',moves:{SS:'2B'},throws:['2B','1B']},
+{id:'p3',pos:'P',title:'Comebacker zum Pitcher, Runner auf 3',runners:[0,0,1],outs:0,
+ hit:{type:'ground',to:[198,294],dur:600},run:[.4,0,0,.08],
+ q:'Ball zum Pitcher, Runner auf der 3. Base. Was macht der Pitcher?',
+ opts:['Sofort zum Home Plate werfen','Runner mit Blick halten, dann zur 1.','Zur 3. Base werfen'],ok:1,
+ why:'Der Runner auf der 3. ist nicht forced. Der Pitcher schaut ihn an und hält ihn an der Base. Bleibt er stehen, nimmt der Pitcher das Out an der 1. Startet er, wird er im Rundown gejagt.',moves:{},throws:['1B']},
+{id:'pwild',pos:'C',kind:'pitch',title:'Wild Pitch, Runner auf 3',runners:[0,0,1],outs:1,
+ hit:{type:'ground',to:[240,372],dur:700},run:[null,0,0,.55],
+ q:'Der Ball rollt hinter den Catcher, der Runner von der 3. läuft. Wer deckt das Home Plate?',
+ opts:['First Baseman','Third Baseman','Pitcher','Niemand, der Catcher läuft zurück'],ok:2,
+ why:'Der Catcher holt den Ball. Der Pitcher sprintet zum Home Plate und nimmt den Wurf für das Tag-Out.',moves:{P:'H'},throws:['H']},
+{id:'bunt1',pos:'3B',title:'Sacrifice Bunt, Runner auf 1',runners:[1,0,0],outs:0,
+ hit:{type:'bunt',to:[166,312],dur:1200,co:{'1B':[232,306],P:[192,306]}},run:[.65,.6,0,0],
+ q:'Bunt Richtung 3. Base. Der Third Baseman fieldet. Wohin wirft er?',
+ opts:['Zur 2. Base','Zur 1. Base','Zur 3. Base'],ok:1,
+ why:'Beim Sacrifice Bunt nimmt die Defense das sichere Out an der 1. Für die 2. reicht die Zeit meist nicht. Weil auch der First Baseman nach vorne gelaufen ist, deckt der Second Baseman die 1.',moves:{'2B':'1B'},throws:['1B']},
+{id:'c0',pos:'C',title:'Bunt vor das Home Plate',runners:[0,0,0],outs:0,
+ hit:{type:'bunt',to:[203,326],dur:700},run:[.35,0,0,0],
+ q:'Der Ball bleibt direkt vor der Platte liegen. Der Catcher hat ihn. Wohin wirft er?',
+ opts:['Zur 1. Base, Wurf seitlich an der Laufbahn vorbei','Zur 2. Base','Zum Pitcher'],ok:0,
+ why:'Der Catcher nimmt das Force-Out an der 1. (2-3). Er tritt einen Schritt zur Seite, damit der Wurf nicht den Batter-Runner trifft.',moves:{},throws:['1B']},
+{id:'cf3',pos:'CF',title:'Fly Ball ins Center Field, Runner auf 3',runners:[0,0,1],outs:1,
+ hit:{type:'fly',to:[200,82],dur:1900},run:[.4,0,0,0],
+ q:'Der Ball ist gefangen, der Runner auf der 3. macht Tag-up. Wohin wirft der Center Fielder?',
+ opts:['Zur 3. Base','Zum Home Plate, der First Baseman steht als Cutoff in der Linie','Zur 2. Base','Ball zum Infield zurücktragen'],ok:1,
+ why:'Nach dem Catch darf der Runner auf der 3. starten (Sacrifice Fly). Der Center Fielder wirft sofort Richtung Home. Der First Baseman steht als Cutoff dazwischen und fängt den Ball ab, falls der Wurf zu spät kommt.',moves:{'1B':[200,302],P:[200,372]},throws:['H']},
+{id:'cf0',pos:'CF',title:'Single ins Center Field',runners:[0,0,0],outs:0,
+ hit:{type:'line',to:[200,148],dur:1100},run:[1.05,0,0,0],
+ q:'Single ins Center Field, keine Runner. Wohin wirft der Center Fielder?',
+ opts:['Zur 1. Base','Zur 2. Base','Zur 3. Base','Zum Home Plate'],ok:1,
+ why:'Der Ball geht zur 2. Base, damit der Batter-Runner an der 1. stehen bleibt. Ein Middle Infielder deckt die Base. Lange Würfe sind hier unnötig.',moves:{SS:'2B'},throws:['2B']},
+{id:'cfgap',pos:'CF',title:'Ball in die Lücke Left-Center',runners:[0,0,0],outs:0,
+ hit:{type:'line',to:[140,80],dur:1700},run:[1.7,0,0,0],
+ q:'Der Ball rollt bis zur Wand. Wer läuft als Relay-Mann ins Outfield?',
+ opts:['Shortstop','Second Baseman','Third Baseman','Left Fielder'],ok:0,
+ why:'Bei Bällen in die linke Hälfte bis Left-Center geht der Shortstop als Relay raus, der Second Baseman deckt die 2. Der Ball geht über den Relay meistens zur 3. Base.',moves:{SS:[158,150],'2B':'2B'},throws:['pSS','3B']},
+{id:'lf2',pos:'LF',title:'Single ins Left Field, Runner auf 2',runners:[0,1,0],outs:0,
+ hit:{type:'line',to:[112,180],dur:1000},run:[1,0,1.15,0],
+ q:'Der Runner von der 2. läuft Richtung Home. Wer ist der Cutoff-Man?',
+ opts:['Shortstop','Third Baseman','Pitcher','Second Baseman'],ok:1,
+ why:'Bei Hits ins Left Field mit Wurf nach Home ist der Third Baseman der Cutoff. Der Pitcher läuft hinter das Home Plate als Backup. Bei Hits nach Center oder Right ist der First Baseman Cutoff.',moves:{'3B':[166,295],P:[200,372]},throws:['p3B','H']},
+{id:'lf1',pos:'LF',title:'Single ins Left Field, Runner auf 1',runners:[1,0,0],outs:0,
+ hit:{type:'line',to:[112,180],dur:1000},run:[1,.9,0,0],
+ q:'Runner auf der 1. Wohin wirft der Left Fielder?',
+ opts:['Zur 3. Base','Zur 2. Base','Zum Home Plate','Zur 1. Base'],ok:1,
+ why:'Bei einem Hit nach links ist der Ball schnell beim Fielder, deshalb stoppt der Runner meist an der 2. Der Left Fielder wirft zur 2., damit der Batter-Runner an der 1. bleibt. Nach rechts ist das anders.',moves:{'2B':'2B'},throws:['2B']},
+{id:'lfpop',pos:'LF',title:'Pop-up ins kurze Left Field',runners:[0,0,0],outs:0,
+ hit:{type:'fly',to:[150,190],dur:2000,co:{SS:[158,200]}},run:[.5,0,0,0],
+ q:'Pop-up zwischen Shortstop und Left Fielder. Beide laufen hin. Wer fängt?',
+ opts:['Shortstop, Infielder haben Vorrang','Left Fielder, Outfielder haben Vorrang','Wer zuerst da ist'],ok:1,
+ why:'Der Outfielder läuft auf den Ball zu und hat ihn vor sich, der Infielder läuft rückwärts. Deshalb hat der Outfielder Vorrang. Er ruft laut „Ich hab ihn!“ und der Shortstop weicht aus.',moves:{SS:[165,212]},throws:[]},
+{id:'rf1',pos:'RF',title:'Single ins Right Field, Runner auf 1',runners:[1,0,0],outs:0,
+ hit:{type:'line',to:[292,180],dur:1000},run:[1,1.6,0,0],
+ q:'Der Runner von der 1. will bis zur 3. Wohin wirft der Right Fielder?',
+ opts:['Zur 2. Base','Zur 3. Base, der Shortstop steht als Cutoff','Zum Home Plate','Zur 1. Base'],ok:1,
+ why:'Bei einem Hit nach rechts ist der Weg 1.→3. für den Runner lohnend. Der Right Fielder wirft zur 3., der Shortstop steht in der Linie als Cutoff, der Third Baseman deckt die Base.',moves:{SS:[192,250]},throws:['pSS','3B']},
+{id:'rf2',pos:'RF',title:'Tiefer Fly Ball ins Right Field, Runner auf 2',runners:[0,1,0],outs:1,
+ hit:{type:'fly',to:[315,118],dur:1900},run:[.4,0,0,0],
+ q:'Gefangen. Der Runner auf der 2. macht Tag-up und läuft zur 3. Wohin wirft der Right Fielder?',
+ opts:['Zur 2. Base','Zur 3. Base','Zum Home Plate','Zur 1. Base'],ok:1,
+ why:'Der Runner darf nach dem Catch zur 3. starten. Der Right Fielder wirft dorthin, der Shortstop steht als Cutoff in der Linie.',moves:{SS:[195,245]},throws:['pSS','3B']},
+{id:'rfline',pos:'RF',title:'Ball entlang der rechten Foul Line',runners:[0,0,0],outs:0,
+ hit:{type:'line',to:[352,162],dur:1600},run:[1.7,0,0,0],
+ q:'Der Ball rollt in die Ecke. Wer läuft als Relay-Mann raus?',
+ opts:['Shortstop','Second Baseman','First Baseman','Center Fielder'],ok:1,
+ why:'Bei Bällen ins Right Field und Right-Center geht der Second Baseman als Relay raus, der Shortstop deckt die 2. Ziel des Relays ist meistens die 3. Base.',moves:{'2B':[292,200],SS:'2B'},throws:['p2B','3B']},
+/* ---- Erweiterung ---- */
+{id:'ss3_2o',pos:'SS',title:'Groundball zum Shortstop, Runner auf 3, 2 Outs',runners:[0,0,1],outs:2,
+ hit:{type:'ground',to:[167,228],dur:1100},run:[.55,0,0,.5],
+ q:'2 Outs, der Runner auf der 3. läuft Richtung Home. Wohin wirft der Shortstop?',
+ opts:['Zum Home Plate, um den Run zu verhindern','Zur 1. Base: Das dritte Out beendet das Inning, der Run zählt nicht','Zur 3. Base'],ok:1,
+ why:'Mit 2 Outs reicht ein Out. Wird der Batter-Runner vor Erreichen der 1. Base out, zählt kein Run, auch wenn der Runner von der 3. schon über die Platte gelaufen ist.',moves:{},throws:['1B']},
+{id:'ssIn',pos:'SS',title:'Infield spielt vorne, Runner auf 3',runners:[0,0,1],outs:1,
+ hit:{type:'ground',to:[176,250],dur:800},run:[.45,0,0,.6],
+ q:'Spätes Spiel, ein Run Vorsprung. Das Infield spielt vorne, der Runner auf der 3. startet beim Schlag. Wohin wirft der Shortstop?',
+ opts:['Zur 1. Base','Zum Home Plate, Tag-Out am Runner','Zur 3. Base'],ok:1,
+ why:'Genau dafür spielt das Infield vorne: Der Run soll nicht zählen. Der Runner ist nicht forced, der Catcher braucht also ein Tag-Out. Weil der Shortstop weiter vorne steht, kommt der Wurf rechtzeitig.',moves:{},throws:['H']},
+{id:'ssHole',pos:'SS',title:'Groundball tief ins Loch, Runner auf 1, 2 Outs',runners:[1,0,0],outs:2,
+ hit:{type:'ground',to:[148,238],dur:1150},run:[.55,.45,0,0],
+ q:'Der Shortstop stoppt den Ball tief zwischen 3. Base und seiner Position. Wohin wirft er?',
+ opts:['Zur 1. Base','Zur 2. Base, kürzester Wurf zum Force-Out','Zur 3. Base'],ok:1,
+ why:'Mit 2 Outs reicht ein Out. Aus dem tiefen Loch ist der Wurf zur 1. sehr lang. Der Runner von der 1. ist forced, deshalb ist die 2. Base das sicherste Out: kurzer Wurf, der Second Baseman deckt (6-4).',moves:{'2B':'2B'},throws:['2B']},
+{id:'2b13',pos:'2B',title:'Groundball zum Second Baseman, Runner auf 1 und 3',runners:[1,0,1],outs:0,
+ hit:{type:'ground',to:[233,228],dur:1000},run:[.55,.45,0,.45],
+ q:'Früh im Spiel, das Infield spielt tief. Runner auf 1 und 3, 0 Outs. Wohin wirft der Second Baseman?',
+ opts:['Zum Home Plate','Zur 2. Base: Double Play, der Run darf zählen','Zur 1. Base'],ok:1,
+ why:'Früh im Spiel tauscht die Defense gern einen Run gegen zwei Outs. Der Runner auf der 3. ist nicht forced, nach Home wäre es ein riskantes Tag-Play. Mit 4-6-3 sind zwei Outs sicher, danach sind die Bases leer.',moves:{SS:'2B'},throws:['2B','1B']},
+{id:'1bBag',pos:'1B',title:'Groundball zum First Baseman nah an der Base',runners:[0,1,0],outs:0,
+ hit:{type:'ground',to:[253,271],dur:900},run:[.55,0,.12,0],
+ q:'Runner auf der 2. Der Ball kommt nah an die 1. Base. Was macht der First Baseman?',
+ opts:['Zum Pitcher an die 1. Base werfen','Selbst die 1. Base treten','Zur 3. Base werfen'],ok:1,
+ why:'Ist der Ball nah an der Base, tritt der First Baseman sie selbst: ein Out ohne Wurf (3U), also ohne Fehlerrisiko. Der Pitcher läuft trotzdem mit, falls es eng wird.',moves:{P:[236,292]},throws:[]},
+{id:'3bRoll',pos:'3B',kind:'ground',title:'Langsamer Roller Richtung 3. Base',runners:[0,0,0],outs:0,
+ hit:{type:'bunt',to:[168,306],dur:1400},run:[.7,0,0,0],
+ q:'Der Ball rollt langsam, der Batter-Runner ist schnell. Was macht der Third Baseman?',
+ opts:['Warten, bis der Ball stillsteht','Anlaufen, den Ball mit der bloßen Hand nehmen und im Laufen zur 1. werfen','Zum Pitcher werfen'],ok:1,
+ why:'Bei einem langsamen Roller zählt jede Zehntelsekunde. Der Third Baseman läuft aggressiv an, nimmt den Ball mit der bloßen Hand und wirft im Laufen zur 1. (5-3).',moves:{},throws:['1B']},
+{id:'bunt12',pos:'P',title:'Bunt zum Pitcher, Runner auf 1 und 2',runners:[1,1,0],outs:0,
+ hit:{type:'bunt',to:[180,310],dur:1000,co:{'3B':[149,279],'1B':[236,306]}},run:[.55,.4,.35,0],
+ q:'Der Pitcher ist schnell am Ball, der Runner von der 2. ist erst auf halbem Weg. Wohin wirft er?',
+ opts:['Zur 1. Base','Zur 3. Base, Force-Out am Lead-Runner','Zum Home Plate'],ok:1,
+ why:'Mit Runnern auf 1 und 2 sind alle forced. Ist der Pitcher früh am Ball, holt er den Lead-Runner an der 3. Base, die der Third Baseman deckt. So steht kein Runner 90 Fuß vor Home. Wird es knapp, nimmt er das sichere Out an der 1.',moves:{'2B':'1B'},throws:['3B']},
+{id:'cSteal3',pos:'C',title:'Steal der 3. Base',runners:[0,1,0],outs:1,
+ hit:null,pitchTo:[200,354],run:[null,0,.75,0],
+ q:'Der Runner auf der 2. stiehlt die 3. Base. Wohin wirft der Catcher?',
+ opts:['Zur 3. Base, der Third Baseman deckt','Zur 2. Base','Zum Shortstop','Gar nicht werfen'],ok:0,
+ why:'Die 3. Base deckt immer der Third Baseman. Steht ein Rechtshänder im Batter’s Box, macht der Catcher einen Schritt nach vorn, um an ihm vorbeizuwerfen. Der Left Fielder läuft hinter die 3. Base als Backup.',moves:{'3B':'3B',LF:[118,255]},throws:['3B']},
+{id:'iff',pos:'SS',title:'Infield Fly',runners:[1,1,0],outs:0,
+ hit:{type:'fly',to:[182,240],dur:2000},run:[.35,0,0,0],
+ q:'0 Outs, Runner auf 1 und 2. Ein hoher Pop-up über dem Infield. Was gilt?',
+ opts:['Der Batter ist automatisch out (Infield Fly Rule)','Der Shortstop lässt ihn absichtlich fallen und spielt ein Double Play','Die Runner müssen laufen'],ok:0,
+ why:'Infield Fly Rule: Bei weniger als 2 Outs und Runnern auf 1 und 2 oder Bases loaded ist der Batter bei einem fangbaren Pop-up im Infield automatisch out. So kann die Defense den Ball nicht absichtlich fallen lassen. Die Runner dürfen auf eigenes Risiko laufen.',moves:{},throws:[]},
+{id:'popMound',pos:'2B',kind:'fly',title:'Pop-up über dem Mound',runners:[0,0,0],outs:0,
+ hit:{type:'fly',to:[212,272],dur:1900,co:{P:[186,300]}},run:[.35,0,0,0],
+ q:'Ein hoher Pop-up kommt genau über den Pitcher’s Mound. Wer fängt ihn?',
+ opts:['Der Pitcher, der Ball ist über ihm','Ein Infielder, hier der Second Baseman','Der Catcher'],ok:1,
+ why:'Der Pitcher überlässt Pop-ups fast immer den Infieldern. Er zeigt auf den Ball und geht aus dem Weg, die Infielder sind geübter im Fangen hoher Bälle.',moves:{},throws:[]},
+{id:'popC1B',pos:'1B',title:'Foul-Pop-up zwischen Catcher und First Baseman',runners:[0,0,0],outs:0,
+ hit:{type:'fly',to:[240,322],dur:1800,co:{C:[226,334]}},run:[.2,0,0,0],
+ q:'Foul-Pop-up zwischen Home Plate und 1. Base. Catcher und First Baseman laufen hin. Wer fängt?',
+ opts:['Der Catcher, er ist dem Home Plate am nächsten','Der First Baseman, er hat Vorrang vor dem Catcher','Der Pitcher'],ok:1,
+ why:'Der Catcher hat bei Pop-ups die niedrigste Priorität: Mit Maske und Ausrüstung läuft er schlechter und muss den Ball über sich finden. Der First Baseman läuft auf den Ball zu und ruft ihn laut.',moves:{},throws:[]},
+{id:'cfrf',pos:'CF',title:'Fly Ball zwischen Center und Right Field',runners:[0,0,0],outs:1,
+ hit:{type:'fly',to:[262,100],dur:1900,co:{RF:[276,112]}},run:[.45,0,0,0],
+ q:'Center Fielder und Right Fielder laufen beide zum Ball. Wer fängt?',
+ opts:['Der Right Fielder, er ist näher an der Linie','Der Center Fielder, er hat Vorrang im Outfield','Keiner, sie lassen ihn aufspringen'],ok:1,
+ why:'Der Center Fielder ist der Chef im Outfield und hat Vorrang vor Left und Right Fielder. Ruft er „Ich hab ihn!“, dreht der Right Fielder ab und sichert hinter ihm ab.',moves:{RF:[284,86]},throws:[]},
+{id:'lfFly1',pos:'LF',title:'Fly Ball ins Left Field, Runner auf 1',runners:[1,0,0],outs:0,
+ hit:{type:'fly',to:[100,142],dur:1800},run:[.4,0,0,0],
+ q:'Der Left Fielder fängt. Der Runner steht an der 1. Base und könnte per Tag-up losrennen. Wohin wirft der Left Fielder?',
+ opts:['Zur 1. Base','Sofort zur 2. Base','Zum Home Plate','Ball festhalten und zum Infield joggen'],ok:1,
+ why:'Nach dem Catch darf der Runner per Tag-up zur 2. laufen. Der Left Fielder bringt den Ball deshalb sofort zur 2. Base. Wer den Ball festhält oder trödelt, lädt den Runner zum Laufen ein.',moves:{'2B':'2B'},throws:['2B']},
+{id:'cf2',pos:'CF',title:'Single ins Center Field, Runner auf 2',runners:[0,1,0],outs:1,
+ hit:{type:'line',to:[205,150],dur:1050},run:[1,0,1.2,0],
+ q:'Der Runner von der 2. läuft Richtung Home. Wer ist der Cutoff zwischen Center Fielder und Home Plate?',
+ opts:['Shortstop','Second Baseman','First Baseman','Pitcher'],ok:2,
+ why:'Bei Hits ins Center und Right Field mit Wurf nach Home ist der First Baseman der Cutoff. Der Pitcher sichert hinter dem Home Plate ab. Bei Hits ins Left Field übernimmt der Third Baseman.',moves:{'1B':[203,300],P:[200,372]},throws:['p1B','H']},
+{id:'rf2_2o',pos:'RF',title:'Single ins Right Field, Runner auf 2, 2 Outs',runners:[0,1,0],outs:2,
+ hit:{type:'line',to:[292,180],dur:1000},run:[1,0,1.3,0],
+ q:'Mit 2 Outs läuft der Runner schon beim Schlag los. Wohin wirft der Right Fielder?',
+ opts:['Zur 3. Base','Zum Home Plate, der First Baseman steht als Cutoff','Zur 2. Base','Zur 1. Base'],ok:1,
+ why:'Der Right Fielder wirft nach Home, der First Baseman steht als Cutoff in der Linie. Kommt der Wurf zu spät, fängt der Cutoff ihn ab und verhindert, dass der Batter-Runner zur 2. weiterläuft.',moves:{'1B':[238,276],P:[200,372]},throws:['p1B','H']},
+{id:'rcR1',pos:'CF',title:'Ball in die Lücke Right-Center, Runner auf 1',runners:[1,0,0],outs:0,
+ hit:{type:'line',to:[262,80],dur:1700},run:[1.6,2.5,0,0],
+ q:'Der Runner von der 1. will bis Home. Der Second Baseman ist als Relay draußen. Wohin wirft er?',
+ opts:['Zur 3. Base','Zum Home Plate','Zur 2. Base','Ball halten'],ok:1,
+ why:'Der Relay-Mann wirft dorthin, wo das wichtigste Out möglich ist: den Run am Home Plate. Der Catcher ruft ihm vorher laut zu, wohin der Ball soll. Ist der Runner schon sicher, ruft er die 3. oder 2. Base, um den Batter-Runner zu stoppen.',moves:{'2B':[245,165],SS:'2B',P:[200,372]},throws:['p2B','H']},
+/* ---- Erweiterung 2: Wer deckt, wer nimmt an ---- */
+{id:'lf0cov',pos:'LF',title:'Single ins Left Field: Wer nimmt an der 2. an?',runners:[0,0,0],outs:0,
+ hit:{type:'line',to:[112,180],dur:1000},run:[1,0,0,0],
+ q:'Single ins Left Field, keine Runner. Der Left Fielder wirft zur 2. Base. Wer nimmt den Ball dort an?',
+ opts:['Shortstop','Second Baseman','Pitcher','Center Fielder'],ok:1,
+ why:'Bei Bällen ins Left Field läuft der Shortstop Richtung Ball und stellt sich in die Wurflinie. Deshalb deckt der Second Baseman die 2. Base und nimmt den Wurf an.',moves:{'2B':'2B',SS:[150,205]},throws:['2B']},
+{id:'rf0cov',pos:'RF',title:'Single ins Right Field: Wer nimmt an der 2. an?',runners:[0,0,0],outs:0,
+ hit:{type:'line',to:[292,180],dur:1000},run:[1,0,0,0],
+ q:'Single ins Right Field, keine Runner. Der Right Fielder wirft zur 2. Base. Wer nimmt den Ball an?',
+ opts:['Second Baseman','Shortstop','First Baseman','Pitcher'],ok:1,
+ why:'Das Spiegelbild zum Left Field: Bei Bällen ins Right Field läuft der Second Baseman Richtung Ball, also deckt der Shortstop die 2. Base.',moves:{SS:'2B','2B':[250,205]},throws:['2B']},
+{id:'rfFly1',pos:'RF',title:'Fly Ball ins Right Field, Runner auf 1',runners:[1,0,0],outs:0,
+ hit:{type:'fly',to:[300,140],dur:1800},run:[.4,0,0,0],
+ q:'Der Right Fielder fängt. Damit der Runner an der 1. nicht per Tag-up startet, wirft er sofort zur 2. Base. Wer nimmt an?',
+ opts:['Second Baseman','Shortstop','First Baseman'],ok:1,
+ why:'Bei Bällen ins Right Field geht der Second Baseman ein Stück Richtung Outfield in die Wurflinie. Die 2. Base deckt der Shortstop.',moves:{SS:'2B','2B':[252,200]},throws:['2B']},
+{id:'3b1',pos:'3B',title:'Groundball zum Third Baseman, Runner auf 1',runners:[1,0,0],outs:0,
+ hit:{type:'ground',to:[139,270],dur:900},run:[.5,.45,0,0],
+ q:'Runner auf der 1., 0 Outs. Wohin wirft der Third Baseman, und wer nimmt an?',
+ opts:['Zur 2. Base, der Second Baseman nimmt an (5-4-3)','Zur 2. Base, der Shortstop nimmt an (5-6-3)','Zur 1. Base, der First Baseman nimmt an'],ok:0,
+ why:'Bei Groundballs auf die linke Seite deckt der Second Baseman die 2. Base. Der Shortstop würde sonst dem Wurf in den Weg laufen. Der Second Baseman tritt die Base und wirft weiter zur 1.',moves:{'2B':'2B'},throws:['2B','1B']},
+{id:'ssBag',pos:'SS',title:'Groundball zum Shortstop direkt an der 2. Base',runners:[1,0,0],outs:1,
+ hit:{type:'ground',to:[192,233],dur:900},run:[.55,.45,0,0],
+ q:'Runner auf der 1. Der Shortstop nimmt den Ball direkt neben der 2. Base auf. Was macht er?',
+ opts:['Zum Second Baseman flippen','Selbst die 2. Base treten und zur 1. werfen','Nur zur 1. Base werfen'],ok:1,
+ why:'Steht der Fielder praktisch auf der Base, tritt er sie selbst. Das ist schneller und sicherer als ein Flip. Danach wirft er weiter zur 1. Base. Der Second Baseman kommt trotzdem zur Base, falls es eng wird.',moves:{SS:'2B','2B':[216,234]},throws:['2B','1B']},
+{id:'ssLine2',pos:'SS',title:'Line Drive zum Shortstop, Runner auf 2 gestartet',runners:[0,1,0],outs:0,
+ hit:{type:'line',to:[170,224],dur:600},run:[.3,0,.4,0],
+ q:'Der Shortstop fängt den Line Drive. Der Runner von der 2. war schon Richtung 3. losgelaufen. Wohin wirft er, und wer nimmt an?',
+ opts:['Zur 2. Base, der Second Baseman nimmt an','Zur 3. Base, der Third Baseman nimmt an','Ball behalten'],ok:0,
+ why:'Nach dem Catch muss der Runner zurück zur 2. Base. Der Shortstop wirft dorthin, der Second Baseman deckt: Double Play (6-4).',moves:{'2B':'2B'},throws:['2B']},
+{id:'ssSteal',pos:'SS',title:'Steal der 2. Base, Linkshänder am Schlag',runners:[1,0,0],outs:1,
+ hit:null,pitchTo:[200,354],run:[null,.6,0,0],
+ q:'Ein Linkshänder schlägt, der Runner auf der 1. stiehlt. Der Catcher wirft zur 2. Base. Wer nimmt an?',
+ opts:['Second Baseman','Shortstop','Pitcher'],ok:1,
+ why:'Ein Linkshänder schlägt meist nach rechts, also bleibt der Second Baseman in seinem Bereich. Der Shortstop deckt die 2. und nimmt den Wurf an. Bei Rechtshändern ist es umgekehrt.',moves:{SS:'2B'},throws:['2B']},
+{id:'buntSS',pos:'1B',title:'Bunt zum First Baseman, Runner auf 1',runners:[1,0,0],outs:0,
+ hit:{type:'bunt',to:[228,308],dur:1100,co:{P:[204,304]}},run:[.5,.5,0,0],
+ q:'Der First Baseman ist früh am Bunt und will den Lead-Runner an der 2. Base. Wer nimmt den Wurf an der 2. an?',
+ opts:['Second Baseman','Shortstop','Center Fielder'],ok:1,
+ why:'Der First Baseman ist nach vorne gelaufen, deshalb deckt der Second Baseman die 1. Base. Die 2. Base übernimmt der Shortstop (3-6). Wird es zu knapp, geht der Ball stattdessen zum Second Baseman an der 1.',moves:{SS:'2B','2B':'1B'},throws:['2B']},
+{id:'pop1b2b',pos:'2B',title:'Pop-up zwischen First und Second Baseman',runners:[0,0,0],outs:0,
+ hit:{type:'fly',to:[246,240],dur:1900,co:{'1B':[254,248]}},run:[.35,0,0,0],
+ q:'Ein Pop-up fällt zwischen First Baseman und Second Baseman. Beide laufen hin. Wer fängt?',
+ opts:['First Baseman','Second Baseman','Wer zuerst ruft'],ok:1,
+ why:'Middle Infielder haben bei Pop-ups Vorrang vor den Corner-Infieldern. Der Second Baseman ruft den Ball, der First Baseman dreht ab und geht zurück zu seiner Base.',moves:{'1B':'1B'},throws:[]},
+{id:'lfLine1',pos:'LF',title:'Double in die linke Ecke, Runner auf 1',runners:[1,0,0],outs:1,
+ hit:{type:'line',to:[52,162],dur:1700},run:[1.7,2.4,0,0],
+ q:'Der Ball rollt in die linke Ecke, der Runner von der 1. will bis nach Hause. Wer läuft als Relay raus, und wer nimmt am Ende an?',
+ opts:['Shortstop als Relay, der Catcher nimmt an','Third Baseman als Relay, der Catcher nimmt an','Second Baseman als Relay, der Pitcher nimmt an'],ok:0,
+ why:'In die linke Hälfte läuft der Shortstop als Relay, der Second Baseman deckt die 2. Der Third Baseman bleibt an seiner Base. Am Home Plate nimmt der Catcher an, der Pitcher sichert dahinter ab.',moves:{SS:[102,196],'2B':'2B',P:[200,372]},throws:['pSS','H']},
+{id:'lfSac',pos:'LF',title:'Sacrifice Fly ins Left Field',runners:[0,0,1],outs:1,
+ hit:{type:'fly',to:[100,142],dur:1800},run:[.4,0,0,0],
+ q:'Der Left Fielder fängt, der Runner auf der 3. macht Tag-up und läuft. Wohin wirft der Left Fielder?',
+ opts:['Zum Home Plate, der Third Baseman steht als Cutoff','Zur 3. Base','Zum Shortstop an der 2. Base'],ok:0,
+ why:'Der Wurf geht Richtung Home. Bei Würfen aus dem Left Field steht der Third Baseman als Cutoff in der Linie. Er lässt den Ball durch, wenn das Out noch möglich ist, sonst fängt er ihn ab.',moves:{'3B':[160,282],P:[200,372]},throws:['p3B','H']},
+{id:'cf1',pos:'CF',title:'Single ins Center Field, Runner auf 1 will zur 3.',runners:[1,0,0],outs:0,
+ hit:{type:'line',to:[205,150],dur:1050},run:[1,1.6,0,0],
+ q:'Der Runner von der 1. läuft weiter zur 3. Base. Wer steht als Cutoff zwischen Center Fielder und 3. Base?',
+ opts:['Shortstop','Second Baseman','Third Baseman','Pitcher'],ok:0,
+ why:'Bei Würfen aus dem Outfield zur 3. Base ist der Shortstop der Cutoff, der Second Baseman deckt die 2. Der Third Baseman nimmt den Wurf an seiner Base an.',moves:{SS:[180,214],'2B':'2B'},throws:['pSS','3B']},
+/* ---- Regelwissen DBL 2026 ---- */
+...[
+ ['rName','Name der Liga',[0,0,0],0,'Wie heißt die höchste deutsche Baseball-Liga seit der Saison 2026?',['Deutsche Baseball Liga (DBL)','1. Baseball-Bundesliga','German Baseball Premier League'],0,'Mit der Saison 2026 wurde die 1. Bundesliga in „Deutsche Baseball Liga“ umbenannt. Darunter spielt weiter die 2. Baseball-Bundesliga.','BuSpO 2026, Art. 2.1.02'],
+ ['rInn','Spieldauer',[0,0,0],0,'Über wie viele Innings werden die Spiele der DBL angesetzt?',['7 Innings','9 Innings','Erstes Spiel 9, zweites Spiel 7 Innings'],1,'Alle DBL-Spiele gehen über 9 Innings. Ein Spieltag besteht aus zwei Einzelspielen an aufeinanderfolgenden Tagen.','DBL-DVO 2026, Art. 11.3.08'],
+ ['rExtra','Extra Innings',[1,1,0],0,'Nach 9 Innings steht es unentschieden. Wie beginnt in der DBL jedes Extra-Inning?',['Mit einem Läufer auf der 2. Base und 0 Outs, wie in der MLB','Mit Läufern auf der 1. und 2. Base und 0 Outs','Ganz normal, ohne Läufer'],1,'Jedes Extra-Inning startet mit Läufern auf der 1. und 2. Base und 0 Outs. Läufer auf der 2. ist der Spieler zwei Plätze vor dem Batter in der Batting Order, Läufer auf der 1. der Spieler direkt davor.','DBL-DVO 2026, Art. 11.3.02'],
+ ['rAusl','Ausländer auf dem Feld',[0,0,0],0,'Wie viele Ausländer dürfen in der DBL grundsätzlich gleichzeitig auf dem Feld stehen?',['Einer','Zwei','Drei','Unbegrenzt'],1,'Grundsätzlich höchstens zwei. Ausnahme: Pitcht ein Ausländer und stehen schon zwei weitere auf dem Feld, muss ein Deutscher DH sein. Dann sind defensiv drei Ausländer erlaubt, offensiv bleiben es zwei.','DBL-DVO 2026, Art. 10.2.02'],
+ ['rPitch','Pitcher im ersten Spiel',[0,0,0],0,'Wer darf im ersten Spiel eines DBL-Spieltags pitchen?',['Nur deutsche Pitcher','Deutsche und höchstens ein ausländischer Pitcher','Jeder spielberechtigte Spieler'],0,'Im ersten Spiel eines Spieltags werfen nur deutsche Pitcher. Im zweiten Spiel darf zusätzlich ein ausländischer Pitcher eingesetzt werden, ohne Inning-Begrenzung.','DBL-DVO 2026, Art. 10.2.03'],
+ ['rPO','Pitcher in den Playoffs',[0,0,0],0,'In welchen Spielen einer Playoff-Serie darf ein ausländischer Pitcher eingesetzt werden?',['In jedem Spiel','In Spiel 2 und 4','Nur in Spiel 5'],1,'In den Playoffs werfen in Spiel 1, 3 und gegebenenfalls 5 nur deutsche Pitcher. In Spiel 2 und 4 darf neben Deutschen ein ausländischer Pitcher eingesetzt werden.','DBL-DVO 2026, Art. 10.2.03'],
+ ['rSSC','Deutsche Schlüsselpositionen',[0,0,0],0,'Auf welchen Positionen muss in der DBL ständig mindestens ein deutscher Spieler stehen?',['Pitcher und First Baseman','Shortstop und Catcher','Center Fielder und Second Baseman'],1,'Auf den Positionen Shortstop und Catcher muss ständig mindestens ein deutscher Spieler eingesetzt sein.','DBL-DVO 2026, Art. 10.3.01'],
+ ['rBat','Schläger',[0,0,0],0,'Mit welchen Schlägern wird in der DBL geschlagen?',['Aluminium-Schläger','Holz- oder holzähnliche Schläger','Beides, freie Wahl'],1,'Für alle Spieler sind Holz- oder holzähnliche Schläger Pflicht. Ein nicht zugelassener Schläger wird mit 100 € bestraft.','DBL-DVO 2026, Art. 4.3.04 i. V. m. Anhang 1 BuSpO'],
+ ['rHelm','Helmpflicht',[0,0,0],0,'Wer muss im Spiel einen Helm tragen?',['Nur der Batter','Batter und Runner, Base Coaches nicht','Batter, Runner, Base Coaches und der Catcher (mit Maske)'],2,'Helmpflicht gilt für Batter, Runner und Base Coaches. In der Erwachsenenliga reicht ein Ohrenschutz auf der dem Pitcher zugewandten Seite. Der Catcher trägt Helm und Maske, auch beim Aufwärmen und im Bullpen.','BuSpO, Art. 4.3.01'],
+ ['rSerie','Playoff-Modus',[0,0,0],0,'Wie werden Viertelfinale, Halbfinale und Finale der DBL gespielt?',['Jeweils Best-of-3','Jeweils Best-of-5','Best-of-3, das Finale Best-of-7'],1,'Alle Playoff-Serien sind Best-of-5. Ein mögliches fünftes Spiel findet an einem dritten Spieltag statt.','DBL-DVO 2026, Art. 11.3.08'],
+ ['rEins','Playoff-Spielberechtigung',[0,0,0],0,'Wie viele tatsächliche Einsätze in der regulären Saison braucht ein ausländischer Spieler, um in den Playoffs spielen zu dürfen?',['4','9','15'],1,'Ausländer brauchen mindestens 9 tatsächliche Einsätze laut Scoresheet, Spieler mit Status A bis D mindestens 4. Nur auf dem Lineup zu stehen zählt nicht.','DBL-DVO 2026, Art. 10.3.01 und 9.1.03'],
+ ['rTie','Gleichstand in der Tabelle',[0,0,0],0,'Zwei Teams haben dieselbe Siegquote. Welches Kriterium entscheidet zuerst?',['Der direkte Vergleich','Die Team Quality Balance (TQB)','Ein Münzwurf'],0,'Reihenfolge: direkter Vergleich, TQB, Earned-Run-TQB, Team Batting Average, Münzwurf. Die TQB ist Runs pro Inning in der Offense minus Runs pro Inning in der Defense.','BuSpO 2026, Anhang 3']
+].map(([id,title,runners,outs,q,opts,ok,why,src])=>({id,pos:null,kind:'regel',title,runners,outs,hit:null,run:[null,0,0,0],q,opts,ok,why,src,moves:{},throws:[]})),
+/* ---- Erweiterung 3: Absichern (Backup) und Flip ---- */
+{id:'ssFlip',pos:'2B',title:'Groundball zum Second Baseman nah an der 2. Base',runners:[1,0,0],outs:0,
+ hit:{type:'ground',to:[214,234],dur:950},run:[.55,.45,0,0],
+ q:'Runner auf der 1. Der Second Baseman nimmt den Ball nur wenige Meter neben der 2. Base auf. Wie gibt er den Ball zum Shortstop?',
+ opts:['Kurzer Flip von unten (Underhand Toss)','Harter Wurf von oben','Selbst zur 1. Base laufen'],ok:0,
+ why:'Auf kurze Distanz wäre ein harter Wurf von oben schwer zu fangen. Der Second Baseman flippt den Ball von unten mit gestrecktem Arm, damit der Shortstop ihn früh sieht. Der Shortstop deckt die 2. und wirft weiter zur 1. (4-6-3).',moves:{SS:'2B'},throws:['2B','1B']},
+{id:'cBackup1',pos:'SS',title:'Groundball zum Shortstop: Wer sichert die 1. Base ab?',runners:[0,0,0],outs:0,
+ hit:{type:'ground',to:[167,228],dur:1100},run:[.55,0,0,0],
+ q:'Keine Runner. Der Shortstop wirft zur 1. Base. Wer läuft hinter die 1. Base, falls der Wurf danebengeht?',
+ opts:['Der Pitcher','Der Catcher','Der Second Baseman','Niemand'],ok:1,
+ why:'Ohne Runner läuft der Catcher bei Groundballs im Infield an der Foul-Linie entlang hinter die 1. Base. Geht der Wurf daneben, verhindert er, dass der Batter-Runner weiterläuft. Weiter hinten sichert zusätzlich der Right Fielder ab.',moves:{C:[276,302],RF:[290,232]},throws:['1B']},
+{id:'rfBackup',pos:'2B',title:'Groundball zum Second Baseman: Was macht der Right Fielder?',runners:[0,0,0],outs:1,
+ hit:{type:'ground',to:[234,232],dur:1000},run:[.55,0,0,0],
+ q:'Der Second Baseman nimmt den Ball auf und wirft zur 1. Base. Was macht der Right Fielder?',
+ opts:['Er läuft hinter die 1. Base und sichert ab','Er bleibt auf seiner Position','Er läuft zur 2. Base'],ok:0,
+ why:'Jeder Wurf braucht jemanden dahinter. Bei Würfen zur 1. Base läuft der Right Fielder schräg nach innen hinter die Base. So wird aus einem Fehlwurf kein Extra-Base-Hit.',moves:{RF:[284,258]},throws:['1B']},
+{id:'cfBackup2',pos:'CF',title:'Steal der 2. Base: Was macht der Center Fielder?',runners:[1,0,0],outs:0,
+ hit:null,pitchTo:[200,354],run:[null,.6,0,0],
+ q:'Rechtshänder am Schlag, der Runner stiehlt die 2. Base. Der Catcher wirft. Was macht der Center Fielder?',
+ opts:['Er läuft Richtung 2. Base und sichert dahinter ab','Er bleibt tief stehen','Er deckt selbst die 2. Base'],ok:0,
+ why:'Der Second Baseman nimmt den Wurf an, der Center Fielder läuft hinter die 2. Base. Rutscht der Ball durch, hält er den Runner an der 2. statt an der 3.',moves:{'2B':'2B',CF:[200,178]},throws:['2B']},
+{id:'p3Backup',pos:'RF',title:'Single ins Right Field: Wo steht der Pitcher?',runners:[1,0,0],outs:0,
+ hit:{type:'line',to:[292,180],dur:1000},run:[1,1.6,0,0],
+ q:'Der Runner von der 1. läuft zur 3. Base, der Right Fielder wirft dorthin. Wohin läuft der Pitcher?',
+ opts:['Hinter die 3. Base in die Foul-Zone, zum Absichern','Zum Home Plate','Er bleibt auf dem Mound'],ok:0,
+ why:'Bei Würfen zur 3. Base sichert der Pitcher hinter der 3. Base ab, bei Würfen nach Home hinter dem Home Plate. Er läuft los, sobald klar ist, wohin der Wurf geht.',moves:{SS:[192,250],P:[122,306]},throws:['pSS','3B']},
+/* ---- Jugendligen Berlin-Brandenburg: Situationen mit Animation ---- */
+{id:'cpEarly',pos:null,kind:'jugend',title:'Coach-Pitch: Runner startet zu früh',runners:[1,0,0],outs:0,
+ hit:null,pitchTo:[200,354],run:[null,.35,0,0],
+ q:'Coach-Pitch-Liga: Der Runner auf der 1. läuft los, als der Coach wirft. Der Batter trifft den Ball nicht. Was gilt?',
+ opts:['Der Runner ist aus (Early Steal)','Gestohlene Base, der Runner bleibt auf der 2.','Der Runner muss nur zurück'],ok:0,
+ why:'In der Coach-Pitch-Liga ist kein Lead erlaubt. Der Runner darf die Base erst verlassen, wenn der Ball getroffen ist. Läuft er früher los, ist er aus.',src:'BSVBB-DVO 2026, Art. 12.1.04.05',moves:{},throws:[]},
+{id:'cpCoach',pos:'P',kind:'jugend',title:'Coach-Pitch: Ball trifft den Coach',runners:[0,0,0],outs:0,
+ hit:{type:'ground',to:[203,296],dur:500},run:[.2,0,0,0],
+ q:'Coach-Pitch-Liga: Der geschlagene Ball trifft den werfenden Coach. Was gilt?',
+ opts:['Foul Ball','Der Ball ist im Spiel','Der Batter ist aus'],ok:0,
+ why:'Trifft der geschlagene Ball den Coach-Pitcher, ist es ein Foul Ball. Nach dem Schlag soll der Coach den Infield-Bereich zügig verlassen.',src:'BSVBB-DVO 2026, Art. 12.1.04.05',moves:{},throws:[]},
+{id:'cpOver',pos:'SS',kind:'jugend',title:'Coach-Pitch: Overthrow ins Aus',runners:[1,0,0],outs:0,
+ hit:{type:'ground',to:[167,228],dur:1100},run:[.55,.45,0,0],
+ q:'Coach-Pitch-Liga: Der Wurf des Shortstops fliegt über den First Baseman hinweg ins Aus. Wie viele Bases bekommen die Runner?',
+ opts:['Eine Base','Zwei Bases','So viele, wie sie schaffen'],ok:0,
+ why:'In der Coach-Pitch-Liga erhalten alle Runner bei einem Overthrow ins Out-of-Play eine Base. Nach den normalen Regeln (OBR 5.06) wären es zwei.',src:'BSVBB-DVO 2026, Art. 12.1.04.05',moves:{},throws:[[285,300]]},
+/* ---- Jugendligen Berlin-Brandenburg: Regelwissen ---- */
+...[
+ ['jAlter','Altersklassen 2026',[0,0,0],0,'Du bist Jahrgang 2012. In welcher Altersklasse spielst du 2026 in Berlin-Brandenburg?',['Schüler','Jugend','Junioren'],1,'2026 gilt: Schüler Jahrgänge 2014 bis 2017, Jugend 2011 bis 2013, Junioren 2008 bis 2010.','BSVBB-Memo Spielbetrieb 2026, Abschnitt 2.11'],
+ ['jDauer','Spieldauer Schüler und Jugend',[0,0,0],0,'Wie lange dauert ein Spiel in der Schüler- und Jugendliga?',['9 Innings ohne Zeitlimit','7 Innings, höchstens 2 Stunden','5 Innings, höchstens 90 Minuten'],1,'Schüler und Jugend spielen 7 Innings mit einem Zeitlimit von 2 Stunden, Junioren 7 Innings in 2,5 Stunden. Doubleheader gehen über 2 × 5 Innings, außer in der Verbandsliga.','BSVBB-DVO 2026, Art. 11.3.01'],
+ ['jBF1','Pitcher-Limit Schüler',[0,0,0],0,'Gegen wie viele Batter darf ein Schüler-Pitcher an einem Spieltag höchstens pitchen?',['12','18','25'],1,'Schüler-Pitcher dürfen pro Spieltag gegen höchstens 18 Batter pitchen, Jugend-Pitcher gegen 21, Junioren gegen 25. Ein Spieltag umfasst alle Spiele von Freitag bis Sonntag.','BSVBB-DVO 2026, Art. 12.1.04.02'],
+ ['jBF2','Pitcher-Limit Jugend',[0,0,0],0,'Ein Jugend-Pitcher hat am Freitag gegen 10 und am Samstag gegen 8 Batter gepitcht. Gegen wie viele darf er am Sonntag noch pitchen?',['3','11','21'],0,'Das Limit für die Jugend liegt bei 21 Battern pro Spieltag, Freitag bis Sonntag zusammen. 10 + 8 = 18, also bleiben 3.','BSVBB-Memo Spielbetrieb 2026, Abschnitt 2.11'],
+ ['jBF3','Pitcher-Limit erreicht',[0,0,0],0,'Ein Pitcher hat sein Batter-Limit erreicht. Was muss passieren?',['Er darf das Inning noch zu Ende pitchen','Er muss ausgewechselt werden oder die Position wechseln','Der Gegner bekommt einen Walk'],1,'Er muss raus oder auf eine andere Position. Wirft er trotzdem weiter, zählt der nächste Pitch als Einsatz eines nicht spielberechtigten Spielers.','BSVBB-DVO 2026, Art. 12.1.04.02 i. V. m. BuSpO 9.1.05'],
+ ['j5Run','5-Run-Rule',[1,1,1],1,'Jugend-Landesliga: Mit 1 Out fällt der 5. Run in diesem Halbinning. Was passiert?',['Weiterspielen bis zum 3. Out','Sofortiger Seitenwechsel','Das Spiel ist vorbei'],1,'In der Jugend-Landesliga wechselt das Angriffsrecht sofort, wenn der 5. Run eines Halbinnings fällt, egal wie viele Outs es gibt. Ausnahme: Ein Homerun über den Zaun zählt alle Runs, höchstens 8 pro Inning.','BSVBB-DVO 2026, Art. 12.1.04.03'],
+ ['jSpikes','Metallspikes in der Jugend',[0,0,0],0,'Darfst du in den Berliner Nachwuchsligen mit Metallspikes spielen?',['Ja, immer','Nein, nur beim BSVBB-Pokal sind sie erlaubt','Nur als Pitcher'],1,'Metal Cleats sind im Nachwuchs nur beim BSVBB-Pokal erlaubt. Sonst gibt es 50 € Strafe für den Verein. Im Ligaspiel also Gummistollen oder Turf-Schuhe.','BSVBB-DVO 2026, Art. 4.2.03'],
+ ['jBat','Schläger in der Juniorenliga',[0,0,0],0,'Mit welchen Schlägern wird in der Juniorenliga Berlin-Brandenburg geschlagen?',['Grundsätzlich mit Holzschlägern von der Liste der BuSpO','Mit Aluminium','Freie Wahl'],0,'Junioren schlagen mit Holz von der Liste in Anhang 1 der BuSpO. Ausnahmen: Jugendliche Springer und Junioren, die nicht für die Deutsche Meisterschaft gemeldet sind, dürfen Aluminium nutzen. Bei Verstoß wird der Spieler des Feldes verwiesen, plus 50 € Strafe.','BSVBB-DVO 2026, Art. 4.3.04'],
+ ['j8Sp','Nur 8 Spieler da',[0,0,0],0,'Euer Schülerteam hat nur 8 Spieler. Was gilt?',['Das Spiel wird als verloren gewertet','Ihr dürft spielen, die 9. Schlagposition ist automatisch aus','Ein Spieler des Gegners hilft aus'],1,'Nachwuchsteams dürfen mit 7 oder 8 Spielern antreten. Bei 8 ist die 9. Schlagposition automatisch aus, bei 7 die 5. und die 9. Kommt jemand nach, füllt er zuerst Position 5, dann 9.','BSVBB-DVO 2026, Art. 11.4.01'],
+ ['jSpringer','Springer in der Schülerliga',[0,0,0],0,'Wie oft darf ein Spieler aus der Schüler-Landesliga als Springer in der Schüler-Verbandsliga spielen, bevor er fest hochgemeldet wird?',['Einmal','Zweimal, beim dritten Einsatz wird er hochgemeldet','Unbegrenzt'],1,'Jeder Springer darf höchstens zweimal eingesetzt werden, beim dritten Einsatz gilt er als in die Verbandsliga gemeldet. Gleichzeitig dürfen höchstens 3 Springer im Spiel sein.','BSVBB-DVO 2026, Art. 12.1.02'],
+ ['jSchVL','Schüler-Verbandsliga',[0,0,0],0,'Was gilt in der Schüler-Verbandsliga, wenn der Pitcher vier Balls wirft?',['Der Coach wirft von der Seite weiter (Sidetoss)','Walk, der Batter geht zur 1. Base','Der Batter bekommt einen neuen Count'],1,'In der Schüler-Verbandsliga wird ohne Sidetoss gespielt. Nach dem 4. Ball gibt es einen Walk.','BSVBB-Memo Spielbetrieb 2026, Abschnitt 2.11'],
+ ['jCP5','Coach-Pitch: Anzahl Pitches',[0,0,0],0,'Coach-Pitch-Liga: Wie viele Pitches bekommt ein Batter höchstens?',['3','5','Bis zum 4. Ball'],1,'Höchstens 5 Pitches. Jeder Pitch zählt als Strike, auch ein Treffer am Körper. Balls und Walks gibt es nicht. Beim 5. Pitch ist der Batter aus, wenn er nicht fair trifft.','BSVBB-DVO 2026, Art. 12.1.04.05'],
+ ['jCPBunt','Coach-Pitch: Bunts',[0,0,0],0,'Darf in der Coach-Pitch-Liga gebuntet werden?',['Ja','Nein, Bunts sind verboten','Nur mit 2 Strikes'],1,'Bunts sind in der Coach-Pitch-Liga verboten, der Ball muss geschlagen werden und ins Fair Territory gehen. Auch in der Kinderliga mit Tee sind Bunts und Chop-Balls verboten.','BSVBB-DVO 2026, Art. 12.1.04.05 und 12.1.04.06'],
+ ['jKiDef','Kinderliga: Abstand der Verteidigung',[0,0,0],0,'Kinderliga mit Tee: Wie nah dürfen die Feldspieler (außer Catcher) vor dem Schlag an Home stehen?',['Beliebig nah','Nicht näher als der Pitcher, also außerhalb von 14,02 m','Mindestens 5 m vor dem Tee'],1,'Alle Feldspieler außer dem Catcher bleiben vor dem Schlag außerhalb des Bogens von 14,02 m um Home. Steht jemand näher, gibt der Schiedsrichter den Ball nicht frei. Der Catcher steht 2 m hinter dem Tee.','BSVBB-DVO 2026, Art. 12.1.04.06'],
+ ['jKiSteal','Kinderliga: Stehlen',[1,0,0],0,'Darf in der Kinderliga mit Tee gestohlen werden?',['Ja','Nein, Stehlen ist verboten','Nur die 2. Base'],1,'Stehlen ist verboten. Läuft ein Runner zu früh los, ist er aus, aber nur wenn der Batter den Ball fair schlägt. Auch die Infield-Fly-Regel gilt in der Kinderliga nicht.','BSVBB-DVO 2026, Art. 12.1.04.06']
+].map(([id,title,runners,outs,q,opts,ok,why,src])=>({id,pos:null,kind:'jugend',title,runners,outs,hit:null,run:[null,0,0,0],q,opts,ok,why,src,moves:{},throws:[]})),
+/* ---- Baserunning: Lead und Steal (animiert) ---- */
+{id:'lSec',pos:null,kind:'lauf',title:'Secondary Lead',runners:[1,0,0],outs:0,
+ hit:null,pitchTo:[200,354],run:[null,.12,0,0],
+ q:'Der Pitcher wirft zur Platte. Was macht der Runner auf der 1., während der Ball unterwegs ist?',
+ opts:['2 bis 3 Shuffle-Schritte Richtung 2. Base (Secondary Lead)','Stehen bleiben','Auf jeden Fall voll loslaufen'],ok:0,
+ why:'Das ist der Secondary Lead. Wenn der Ball die Schlagzone erreicht, landet der Runner auf dem rechten Fuß, Gewicht nach vorn. So kann er sofort weiterlaufen, wenn der Ball getroffen wird oder wegspringt, oder schnell zurück, wenn der Catcher fängt.',moves:{},throws:[]},
+{id:'lSecRead',pos:'C',kind:'lauf',title:'Ball im Dreck',runners:[1,0,0],outs:0,
+ hit:null,pitchTo:[226,374],run:[null,.12,0,0],
+ q:'Der Pitch springt vor dem Catcher auf den Boden und rollt hinter ihn. Was macht der Runner nach seinem Secondary Lead?',
+ opts:['Sofort zur 2. Base laufen','Zurück zur 1. Base','Stehen bleiben und abwarten'],ok:0,
+ why:'Genau dafür ist der Secondary Lead da: Der Runner sieht den Ball im Dreck und ist schon in Bewegung. Er läuft sofort los, der Catcher muss den Ball erst suchen.',moves:{},throws:[]},
+{id:'lSecBack',pos:'C',kind:'lauf',title:'Catcher fängt sauber',runners:[1,0,0],outs:0,
+ hit:null,pitchTo:[200,354],run:[null,.12,0,0],
+ q:'Der Catcher fängt den Pitch sauber. Was macht der Runner nach seinem Secondary Lead?',
+ opts:['Zügig zurück zur Base, Blick zum Catcher','Stehen bleiben und durchatmen','Zur 2. Base laufen'],ok:0,
+ why:'Ein Catcher kann jederzeit zur 1. werfen (Pickoff). Der Runner geht sofort mit Shuffle- oder Crossover-Schritten zurück und lässt den Ball nicht aus den Augen.',moves:{},throws:[]},
+{id:'lGround2',pos:'2B',kind:'lauf',title:'Runner auf 2: Groundball hinter ihm',runners:[0,1,0],outs:0,
+ hit:{type:'ground',to:[234,232],dur:1000},run:[.55,0,.12,0],
+ q:'Groundball zum Second Baseman. Was macht der Runner auf der 2. Base?',
+ opts:['Zur 3. Base laufen, der Ball ist hinter ihm','Stehen bleiben','Zurück zur 2. Base'],ok:0,
+ why:'Faustregel für den Runner auf der 2.: Ball hinter dir (rechte Seite), dann lauf. Ball vor dir (Shortstop, Third Baseman), dann bleib. Der Second Baseman müsste quer durchs Infield werfen, das schafft er meist nicht rechtzeitig.',moves:{},throws:['1B']},
+{id:'lGround2b',pos:'SS',kind:'lauf',title:'Runner auf 2: Groundball vor ihm',runners:[0,1,0],outs:0,
+ hit:{type:'ground',to:[167,228],dur:1100},run:[.55,0,.12,0],
+ q:'Groundball zum Shortstop, also vor dem Runner auf der 2. Was macht der Runner?',
+ opts:['Zur 3. Base laufen','Stehen bleiben bzw. zurück zur Base','Bis zur Hälfte laufen'],ok:1,
+ why:'Der Ball ist vor ihm, der Shortstop könnte ihn an der 3. leicht taggen lassen. Der Runner geht zurück und startet erst, wenn der Wurf sicher zur 1. Base geht. Er ist ja nicht forced.',moves:{},throws:['1B']},
+{id:'lFlyHalf',pos:'CF',kind:'lauf',title:'Fly Ball, Runner auf 1, 0 Outs',runners:[1,0,0],outs:0,
+ hit:{type:'fly',to:[212,150],dur:1800},run:[.4,.15,0,0],
+ q:'Fly Ball ins mittlere Center Field, 0 Outs. Was macht der Runner auf der 1., solange der Ball in der Luft ist?',
+ opts:['Bis etwa zur Hälfte laufen und schauen, ob gefangen wird','Sofort voll zur 2. Base laufen','An der Base bleiben für Tag-up'],ok:0,
+ why:'Von der 1. zur 2. per Tag-up klappt nur bei sehr tiefen Bällen. Auf halbem Weg kann er nach einem Catch noch zurück und bei einem fallengelassenen Ball weiter, oft bis zur 3.',moves:{SS:'2B'},throws:['2B']},
+{id:'lTwoOuts',pos:'LF',kind:'lauf',title:'Fly Ball, Runner auf 1, 2 Outs',runners:[1,0,0],outs:2,
+ hit:{type:'fly',to:[110,155],dur:1800},run:[.4,.25,0,0],
+ q:'2 Outs, Runner auf der 1. Fly Ball ins Left Field. Was macht der Runner?',
+ opts:['Sofort beim Schlag voll loslaufen','Bis zur Hälfte laufen','An der Base bleiben'],ok:0,
+ why:'Mit 2 Outs gibt es nichts zu verlieren: Wird der Ball gefangen, ist das Inning ohnehin vorbei. Fällt er herunter, hat der Runner den bestmöglichen Start und kommt oft bis nach Hause.',moves:{},throws:[]},
+/* ---- Baserunning: Wissen ---- */
+...[
+ ['lPrim','Primary Lead',[1,0,0],0,'Was ist der Primary Lead?',['Der Abstand zur Base, den der Runner einnimmt, bevor der Pitcher wirft','Die Schritte während des Pitches','Der Start beim Steal'],0,'Der Primary Lead ist der Abstand zur Base, solange der Pitcher mit dem Ball auf der Platte steht. Er ist so groß, dass der Runner bei einem Pickoff mit einem Schritt und einem Hechtsprung sicher zurückkommt.'],
+ ['lPrimSize','Größe des Primary Leads',[1,0,0],0,'Wie groß ist ein typischer Primary Lead an der 1. Base?',['Etwa 3 bis 4 Schritte, so weit, dass man mit einem Schritt und Dive zurückkommt','Bis zur Hälfte zur 2. Base','Ein kleiner Schritt'],0,'Als Faustregel gilt: Körperlänge plus ein Schritt, also etwa 3 bis 4 Schritte. Wie groß genau, hängt vom Runner, vom Pitcher und davon ab, wie gut der Pickoff des Pitchers ist.'],
+ ['lPrimFeet','Haltung beim Lead',[1,0,0],0,'Wie steht der Runner im Primary Lead?',['Seitlich zur Laufbahn, Füße etwas mehr als schulterbreit, Knie gebeugt, Gewicht auf den Fußballen, Blick zum Pitcher','Mit dem Rücken zum Pitcher, Blick zur 2. Base','Aufrecht, Hände auf den Knien'],0,'Der Runner steht in der Laufbahn, sodass er in beide Richtungen starten kann. Die Augen bleiben immer beim Pitcher.'],
+ ['lSecWhen','Start des Secondary Leads',[1,0,0],0,'Wann beginnt der Runner mit dem Secondary Lead?',['Erst wenn der Pitcher sich eindeutig zur Platte bewegt','Sobald der Pitcher den Ball in die Hand nimmt','Wenn der Catcher das Zeichen gibt'],0,'Startet der Runner zu früh, kann der Pitcher ihn mit einem Pickoff erwischen. Erst wenn der Pitcher zur Platte werfen muss, geht es los.'],
+ ['lSecSteps','Schritte beim Secondary Lead',[1,0,0],0,'Welche Schritte nutzt man beim Secondary Lead?',['Shuffle-Schritte: seitlich, die Füße kreuzen sich nicht','Crossover-Schritte wie beim Sprint','Rückwärtsschritte'],0,'Mit Shuffle-Schritten bleibt der Runner im Gleichgewicht und kann in beide Richtungen starten. Kreuzt er die Füße, ist er beim Zurücklaufen zu langsam.'],
+ ['lRHP','Rechtshänder lesen',[1,0,0],0,'Rechtshänder auf dem Mound. Worauf achtet der Runner auf der 1., um den Start zu timen?',['Auf die Ferse des hinteren Fußes: Dreht sie sich, kommt ein Pickoff. Hebt sich zuerst das vordere Bein, geht der Pitch zur Platte.','Auf den Handschuh des Pitchers','Auf den Catcher'],0,'Für einen Pickoff zur 1. muss der Rechtshänder seinen hinteren Fuß drehen. Bewegt sich stattdessen das vordere Bein Richtung Home, ist der Pitch unterwegs und der Steal kann starten.'],
+ ['lLHP','Linkshänder lesen',[1,0,0],0,'Linkshänder auf dem Mound. Ab wann muss er zur Platte werfen?',['Wenn sein gehobenes Bein hinter die hintere Kante der Pitcher’s Plate schwingt','Sobald er die Hände zusammenführt','Er darf immer noch zur 1. werfen'],0,'Ein Linkshänder schaut beim Set direkt zur 1. Base. Nach gängiger Regelauslegung muss er zur Platte werfen, sobald sein freies Bein hinter die hintere Kante der Platte schwingt, sonst ist es ein Balk. Davor kann er noch zur 1. werfen.'],
+ ['lDive','Zurück bei Pickoff',[1,0,0],0,'Pickoff-Wurf zur 1. Base. Wie kommt der Runner am sichersten zurück?',['Kopf voran zur hinteren Ecke der Base, Gesicht Richtung Right Field','Füße voran zur Innenseite der Base','Aufrecht laufend'],0,'Die hintere Ecke ist für den First Baseman am schwersten zu taggen. Mit dem Gesicht zur Right-Field-Seite schützt der Runner seinen Kopf vor dem Wurf.'],
+ ['l2ndLead','Lead an der 2. Base',[0,1,0],0,'Warum kann der Lead an der 2. Base größer sein als an der 1.?',['Kein Fielder steht direkt an der Base, ein Pickoff braucht mehr Zeit','Weil der Weg zur 3. kürzer ist','Ist er nicht, er muss gleich groß sein'],0,'An der 2. hält kein Fielder den Runner direkt an der Base. Der Shortstop oder Second Baseman muss erst hinlaufen. Der Runner achtet trotzdem auf beide und auf Zurufe seines Third-Base-Coaches.'],
+ ['l3rdOut','Steal der 3. Base',[0,1,0],0,'Mit wie vielen Outs sollte man laut Faustregel nie beim Steal der 3. Base out gehen?',['Mit 0 oder 2 Outs','Mit 1 Out','Die Anzahl Outs ist egal'],0,'Mit 0 Outs kommt der Runner von der 2. ohnehin oft nach Hause. Mit 2 Outs punktet er von der 2. bei einem Single fast genauso gut wie von der 3. Am meisten bringt der Steal mit 1 Out, weil dann auch ein Sacrifice Fly oder ein Groundball einen Run bringt.'],
+ ['lDelayed','Delayed Steal',[1,0,0],0,'Was ist ein Delayed Steal?',['Der Runner startet erst, wenn der Catcher den Ball hat und die Middle Infielder nicht zur Base gehen','Ein Steal im letzten Inning','Ein Steal nach einem Foul Ball'],0,'Beim Delayed Steal überrascht der Runner die Defense: Er startet spät, wenn niemand mit einem Steal rechnet und die 2. Base unbesetzt ist.']
+].map(([id,title,runners,outs,q,opts,ok,why])=>({id,pos:null,kind:'lauf',title,runners,outs,hit:null,run:[null,0,0,0],q,opts,ok,why,moves:{},throws:[]}))
+];
+
+/* ---------- DOM ---------- */
+const NS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id);
+const el=(tag,attrs,parent)=>{const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);parent&&parent.appendChild(e);return e;};
+const F={};
+ORDER.forEach(k=>{
+  const g=el('g',{},$('layerFielders'));
+  el('circle',{r:7.5,fill:'var(--def)',stroke:'#fff','stroke-width':1.4},g);
+  const t=el('text',{'text-anchor':'middle',y:3.3,'font-size':9,'font-weight':700,fill:'#fff','font-family':'Barlow Condensed, Arial Narrow, sans-serif'},g);
+  t.textContent=POS[k][0];
+  const ring=el('circle',{r:12,fill:'none',stroke:'var(--lamp)','stroke-width':2,opacity:0},g);
+  F[k]={g,ring,pos:[...HOME[k]]};
+});
+function placeF(k,p){F[k].pos=p;F[k].g.setAttribute('transform',`translate(${p[0]},${p[1]})`);}
+const ballEl=$('ball'),shadowEl=$('shadow');
+function placeBall(p,h=0){ballEl.setAttribute('cx',p[0]);ballEl.setAttribute('cy',p[1]-h);ballEl.setAttribute('r',3.4+h*.025);
+  shadowEl.setAttribute('cx',p[0]);shadowEl.setAttribute('cy',p[1]+1);shadowEl.setAttribute('opacity',Math.max(.12,.35-h*.004));}
+const PATH=[B.H,B['1B'],B['2B'],B['3B'],B.H];
+const lerp=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+function onPath(p){p=Math.max(0,Math.min(4,p));const i=Math.min(3,Math.floor(p));return lerp(PATH[i],PATH[i+1],p-i);}
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const easeOut=t=>1-Math.pow(1-t,2);
+const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+/* ================= Situations-Generator: jede Position × Schlagart × Runner × Outs ================= */
+const GEN=(()=>{
+const BN={'1B':'1. Base','2B':'2. Base','3B':'3. Base','H':'Home Plate'};
+const BZ={'1B':'zur 1. Base','2B':'zur 2. Base','3B':'zur 3. Base','H':'zum Home Plate'};
+const AN={'1B':'an der 1. Base','2B':'an der 2. Base','3B':'an der 3. Base','H':'am Home Plate'};
+const DIE={'1B':'die 1. Base','2B':'die 2. Base','3B':'die 3. Base','H':'das Home Plate'};
+const PN=k=>POS[k][1], NO=k=>POS[k][0];
+const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+const SPOT={
+ ground:{SS:[167,228],'2B':[233,228],'3B':[139,270],'1B':[240,252],P:[198,294]},
+ line:{SS:[170,222],'2B':[230,222],'3B':[137,264],'1B':[262,260],P:[201,290]},
+ pop:{SS:[180,238],'2B':[222,238],'3B':[152,262],'1B':[246,262],C:[216,364]},
+ bunt:{P:[192,306],'1B':[230,306],'3B':[168,306],C:[203,326]},
+ fly:{LF:[100,150],CF:[200,100],RF:[300,150]},
+ single:{LF:[112,182],CF:[205,152],RF:[290,182]},
+ gap:{LF:[58,165],CF:[200,72],RF:[342,165]}
+};
+const TYPES={SS:['ground','line','pop'],'2B':['ground','line','pop'],'3B':['ground','line','pop','bunt'],'1B':['ground','line','pop','bunt'],P:['ground','line','bunt'],C:['bunt','pop'],LF:['fly','single','gap'],CF:['fly','single','gap'],RF:['fly','single','gap']};
+const HIT={ground:'ground',line:'line',pop:'fly',bunt:'bunt',fly:'fly',single:'line',gap:'line'};
+const DUR={ground:1000,line:600,pop:1900,bunt:1100,fly:1800,single:1000,gap:1700};
+const ZUM={P:'zum Pitcher',C:'zum Catcher','1B':'zum First Baseman','2B':'zum Second Baseman','3B':'zum Third Baseman',SS:'zum Shortstop'};
+const FIELD={LF:'Left Field',CF:'Center Field',RF:'Right Field'};
+function title(F,t){
+  if(t==='gap')return {LF:'Double in die linke Ecke',CF:'Double bis an die Center-Field-Wand',RF:'Double in die rechte Ecke'}[F];
+  if(t==='pop'&&F==='C')return 'Foul-Pop-up hinter dem Home Plate';
+  if(t==='fly')return 'Fly Ball ins '+FIELD[F];
+  if(t==='single')return 'Single ins '+FIELD[F];
+  return {ground:'Groundball',line:'Line Drive',pop:'Pop-up',bunt:'Bunt'}[t]+' '+ZUM[F];
+}
+const rtxt=R=>{const a=[1,2,3].filter((n,i)=>R[i]);if(!a.length)return 'Keine Runner';if(a.length===3)return 'Bases loaded';return 'Runner auf '+a.join(' und ');};
+const otxt=o=>o+(o===1?' Out':' Outs');
+const near=(p,b,th=28)=>dist(p,B[b])<th;
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function rng(seed){let a=seed;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function cov(base,F,t,R){
+  if(base==='1B'){if(t==='bunt'&&(F==='1B'||R[0]))return '2B';return F==='1B'?'P':'1B';}
+  if(base==='2B'){if(t==='bunt')return 'SS';return ['SS','3B','LF'].includes(F)?'2B':'SS';}
+  if(base==='3B')return F==='3B'?'SS':'3B';
+  return F==='C'?'P':'C';
+}
+function forceBases(R){const f=['1B'];if(R[0]){f.push('2B');if(R[1]){f.push('3B');if(R[2])f.push('H');}}return f;}
+function nearest(p,bases){let best=bases[0],bd=1e9;bases.forEach(b=>{const d=dist(p,B[b]);if(d<bd){bd=d;best=b;}});return best;}
+function lerpP(a,b,t){return [Math.round(a[0]+(b[0]-a[0])*t),Math.round(a[1]+(b[1]-a[1])*t)];}
+
+/* Entscheidung: liefert {throws, rcv(base->Spieler), self, label, why, noThrow, cut, relay} */
+function decide(F,t,R,o){
+  const p=SPOT[t][F],fb=forceBases(R),loaded=R[0]&&R[1]&&R[2],any=R[0]||R[1]||R[2];
+  const P={throws:[],rcv:{},cut:null,relay:false,why:'',label:'',noThrow:false};
+  const target=(b)=>{const self=(b!=='H'||F==='C')&&near(p,b);const r=self?F:cov(b,F,t,R);P.rcv[b]=r;P.throws.push(b);return self;};
+  const seqCode=()=>{const seq=[F];P.throws.forEach(k=>{const r=k[0]==='p'?k.slice(1):P.rcv[k];if(r)seq.push(r);});const d=seq.filter((k,i)=>i===0||k!==seq[i-1]);return d.length===1?NO(F)+'U':d.map(NO).join('-');};
+  if(['ground','bunt'].includes(t)){
+    if(o===2){
+      const pool=t==='bunt'?(loaded?['1B','H']:['1B']):fb;
+      const b=nearest(p,pool),self=target(b);
+      P.label=self?`Selbst ${DIE[b]} treten`:cap(BZ[b]);
+      P.why=`2 Outs: Ein Out beendet das Inning. Der ${PN(F)} nimmt das sicherste, nächstgelegene Force-Out ${AN[b]}.`+(self?` Er steht so nah an der Base, dass er sie selbst tritt.`:` Der ${PN(P.rcv[b])} nimmt dort an.`);
+    }else if(t==='ground'){
+      if(loaded&&(o===0||!['SS','2B'].includes(F))){
+        const self=target('H');target('1B');
+        P.label=(self?'Selbst das Home Plate treten':'Zum Home Plate')+', dann weiter zur 1. Base';
+        P.why=`Bases loaded, alle Runner sind forced. Das wichtigste Out ist am Home Plate, sonst zählt ein Run. Danach geht der Ball zur 1. Base: Double Play ${seqCode()}.`;
+      }else if(loaded){
+        target('2B');target('1B');
+        P.label=`Zur 2. Base, dann weiter zur 1. Base`;
+        P.why=`Bases loaded, 1 Out: Ein Double Play über die 2. Base (${seqCode()}) beendet das Inning, bevor der Run zählt. Für den ${PN(F)} ist das der kürzere und sicherere Weg als der Wurf nach Home.`;
+      }else if(R[0]&&R[1]&&F==='3B'){
+        target('3B');target('1B');
+        P.label='Selbst die 3. Base treten, dann zur 1. Base';
+        P.why=`Runner auf 1 und 2 sind forced. Der Third Baseman steht direkt an seiner Base: selbst treten und weiter zur 1. Base, Double Play ${seqCode()}.`;
+      }else if(R[0]){
+        target('2B');target('1B');
+        P.label='Zur 2. Base, dann weiter zur 1. Base';
+        P.why=`Der Runner auf der 1. ist forced. Erst das Out am Lead-Runner an der 2. Base, der ${PN(P.rcv['2B'])} deckt. Dann weiter zur 1. Base: Double Play ${seqCode()}.`+(R[2]?(o===0?' Der Runner auf der 3. darf dabei punkten, zwei Outs sind wichtiger.':' Mit dem Double Play ist das Inning vorbei, der Run zählt nicht.'):'');
+      }else{
+        target('1B');
+        P.label='Zur 1. Base';
+        P.why=any?`Kein Runner ist forced, nur der Batter-Runner. Der ${PN(F)} schaut ${R[1]&&R[2]?'die Runner':'den Runner'} kurz an, damit niemand startet, und nimmt das sichere Out an der 1. Base (${seqCode()}).`+(R[2]?' In normaler Abwehrposition ist das sichere Out wichtiger als ein riskanter Wurf nach Home.':''):`Keine Runner: Das einzige Force-Out ist der Batter-Runner an der 1. Base (${seqCode()}).`;
+      }
+    }else{ /* Bunt, weniger als 2 Outs */
+      if(loaded){
+        const self=target('H');target('1B');
+        P.label=(self?'Selbst das Home Plate treten':'Zum Home Plate')+', dann weiter zur 1. Base';
+        P.why=`Bases loaded: Das Force-Out am Home Plate verhindert den Run. Danach weiter zur 1. Base: Double Play ${seqCode()}.`;
+      }else if(R[0]&&R[1]&&['P','1B'].includes(F)){
+        target('3B');
+        P.label='Zur 3. Base';
+        P.why=`Runner auf 1 und 2 sind forced. Beim Bunt bleibt der Third Baseman an seiner Base. Ist der ${PN(F)} schnell am Ball, holt er den Lead-Runner an der 3. Base. So steht kein Runner 90 Fuß vor Home. Wird es knapp, nimmt er das sichere Out an der 1.`;
+      }else{
+        target('1B');
+        P.label='Zur 1. Base';
+        const c=P.rcv['1B'];
+        P.why=(R[0]?'Sacrifice Bunt: Die Offense opfert den Batter, damit die Runner vorrücken. Die Defense nimmt das sichere Out an der 1. Base.':any?'Kein Runner ist forced. Das sichere Out ist an der 1. Base.':'Keine Runner: Bunt aufnehmen und zur 1. Base werfen.')
+          +(R[2]?' Vorher schaut der Fielder den Runner auf der 3. kurz an.':'')
+          +(c==='2B'?' Der Second Baseman deckt die 1. Base, weil der First Baseman nach vorne gelaufen ist.':` Der ${PN(c)} nimmt an der 1. Base an.`)
+          +(F==='C'?' Der Catcher wirft seitlich an der Laufbahn vorbei, damit er den Runner nicht trifft.':'');
+      }
+    }
+  }else if(t==='line'){
+    if(o===2||!any){
+      P.noThrow=true;
+      P.label=o===2?'Kein Wurf nötig: Das Inning ist vorbei':'Ball zum Pitcher zurück, der Batter ist aus';
+      P.why='Line Drive gefangen: Der Batter ist aus.'+(o===2?' Das ist das 3. Out, das Inning ist vorbei.':' Keine Runner, also gibt es nichts weiter zu tun.');
+    }else{
+      const occ=['1B','2B','3B'].filter((b,i)=>R[i]),b=nearest(p,occ),self=target(b);
+      P.label=self?`Selbst die ${BN[b]} treten`:cap(BZ[b])+', bevor der Runner zurück ist';
+      P.why=`Line Drive gefangen: Der Batter ist aus. Der Runner ${AN[b]} war beim Schlag schon unterwegs und muss zurück (Tag-up). `+(self?`Der ${PN(F)} ist der Base am nächsten und tritt sie selbst: Double Play.`:`Der Ball geht sofort ${BZ[b]}, der ${PN(P.rcv[b])} nimmt an: Double Play ${seqCode()}.`);
+    }
+  }else if(t==='pop'){
+    P.noThrow=true;
+    const iff=F!=='C'&&o<2&&R[0]&&R[1];
+    P.iff=iff;
+    P.label=iff?'Rufen und fangen. Es gilt Infield Fly: Der Batter ist automatisch aus':'Laut „Ich hab ihn!“ rufen und fangen';
+    P.why=iff?'Infield Fly Rule: Bei weniger als 2 Outs und Runnern auf 1 und 2 oder Bases loaded ist der Batter bei einem fangbaren Pop-up im Infield automatisch aus. Der Fielder fängt trotzdem, die Runner dürfen auf eigenes Risiko laufen.'
+      :`Der ${PN(F)} ruft den Ball früh und laut, alle anderen machen Platz.`
+        +(F==='C'?' Der Catcher wirft die Maske weg und dreht sich mit dem Rücken zum Feld, denn Pop-ups hinter der Platte drehen sich zurück Richtung Feld.':'')
+        +(any&&o<2?' Nach dem Catch müssen die Runner zurück an ihre Base (Tag-up), deshalb decken die anderen Infielder ihre Bases.':'')
+        +(o===2?' Mit dem Catch ist das Inning vorbei.':'')
+        +(F!=='C'&&o<2&&R[0]&&!R[1]?' Absichtlich fallen lassen bringt nichts: Der Schiedsrichter gibt dann den Batter aus.':'');
+  }else{ /* Outfield */
+    const cutFor=b=>b==='H'?(F==='LF'?'3B':'1B'):'SS';
+    const viaCut=(b,relay)=>{const k=relay?(F==='RF'?'2B':'SS'):cutFor(b);P.cut=k;P.relay=!!relay;P.throws.push('p'+k);target(b);};
+    if(t==='fly'){
+      if(o===2){P.noThrow=true;P.label='Kein Wurf nötig: Das Inning ist vorbei';P.why='Gefangen: Das ist das 3. Out, das Inning ist vorbei. Ball locker zurück ins Infield bringen.';}
+      else if(R[2]){viaCut('H');P.label='Zum Home Plate, über den Cutoff';P.why=`Nach dem Catch darf der Runner auf der 3. per Tag-up starten. Der ${PN(F)} wirft sofort Richtung Home Plate, der ${PN(P.cut)} steht als Cutoff in der Linie. Der Catcher nimmt an, der Pitcher sichert hinter dem Home Plate ab.`;}
+      else if(R[1]){viaCut('3B');P.label='Zur 3. Base, über den Cutoff';P.why='Der Runner auf der 2. kann nach dem Catch per Tag-up zur 3. starten. Der Ball geht zur 3. Base, der Shortstop steht als Cutoff in der Linie.';}
+      else if(R[0]){target('2B');P.label='Zur 2. Base';P.why=`Der Runner auf der 1. muss zurück und könnte per Tag-up zur 2. starten. Ball sofort zur 2. Base, der ${PN(P.rcv['2B'])} deckt.`;}
+      else{target('2B');P.label='Zur 2. Base';P.why=`Der Batter ist aus. Keine Runner: Ball schnell zurück ins Infield zur 2. Base, der ${PN(P.rcv['2B'])} nimmt an.`;}
+    }else if(t==='single'){
+      const r3=R[2]?' Der Runner auf der 3. punktet ohnehin.':'';
+      if(R[1]){viaCut('H');P.label='Zum Home Plate, über den Cutoff';P.why=`Der Runner von der 2. versucht zu punkten. Der Ball geht Richtung Home Plate, der ${PN(P.cut)} steht als Cutoff in der Linie. Kommt der Wurf zu spät, fängt der Cutoff ab, damit der Batter-Runner nicht zur 2. weiterläuft.`+r3;}
+      else if(R[0]&&F!=='LF'){viaCut('3B');P.label='Zur 3. Base, über den Cutoff';P.why=`Bei einem Hit ins ${FIELD[F]} will der Runner von der 1. bis zur 3. Base. Der Ball geht zur 3., der Shortstop steht als Cutoff in der Linie, der Pitcher sichert hinter der 3. Base ab.`+r3;}
+      else if(R[0]){target('2B');P.label='Zur 2. Base';P.why='Bei einem Hit ins Left Field ist der Ball schnell beim Fielder, der Runner von der 1. stoppt meist an der 2. Der Ball geht zur 2. Base, damit der Batter-Runner an der 1. bleibt. Der Second Baseman deckt.'+r3;}
+      else{target('2B');P.label='Zur 2. Base';P.why=`Ball schnell zur 2. Base, damit der Batter-Runner an der 1. stehen bleibt. Der ${PN(P.rcv['2B'])} nimmt an.`+r3;}
+    }else{
+      const sc=(R[1]||R[2])?' Die Runner von der 2. und 3. punkten ohnehin.':'';
+      if(R[0]){viaCut('H',true);P.label='Zum Relay-Mann, der wirft weiter zum Home Plate';P.why=`Der Ball rollt bis an die Wand, der Runner von der 1. will bis nach Hause. Der ${PN(P.cut)} läuft als Relay-Mann raus, der ${PN(F)} wirft zu ihm, er wirft weiter zum Home Plate.`+sc;}
+      else{viaCut('3B',true);P.label='Zum Relay-Mann, der wirft weiter zur 3. Base';P.why=`Der Ball rollt bis an die Wand, der Batter-Runner will ein Triple. Relay über den ${PN(P.cut)} zur 3. Base.`+sc;}
+    }
+  }
+  return P;
+}
+
+/* Aufgaben aller neun Spieler + Laufwege für die Animation */
+function plan(F,t,R,o,P){
+  const d={},mv={},any=R[0]||R[1]||R[2],OF=['LF','CF','RF'].includes(F),thr=P.throws.filter(k=>k[0]!=='p'),tg=thr[thr.length-1];
+  const set=(k,txt,pos)=>{if(d[k]||k===F)return;d[k]=txt;if(pos)mv[k]=pos;};
+  d[F]=(OF?(t==='fly'?'Fängt den Fly Ball: ':'Holt den Ball: '):t==='line'||t==='pop'?'Fängt den Ball: ':'Nimmt den Ball auf: ')+P.label;
+  if(P.cut){const tgt=B[tg],from=SPOT[t][F],pos=P.relay?lerpP(from,tgt,.32):lerpP(tgt,from,.3);set(P.cut,P.relay?'Läuft als Relay-Mann raus und wirft weiter':'Steht als Cutoff in der Wurflinie',pos);}
+  thr.forEach(b=>{const r=P.rcv[b];if(r===F)mv[F]=b;else set(r,`Deckt ${DIE[b]} und nimmt den Wurf an`,b);});
+  const c2=cov('2B',F,t,R),c1=cov('1B',F,t,R);
+  if(!OF){
+    if(t==='bunt'){
+      if(c1==='2B'){set('1B','Läuft nach vorn zum Bunt',[236,300]);set('2B','Deckt die 1. Base','1B');}
+      else{set('1B','Deckt die 1. Base','1B');set('2B','Sichert hinter der 1. Base ab',[262,262]);}
+      set('SS','Deckt die 2. Base','2B');
+      set('3B',R[0]&&R[1]?'Bleibt an der 3. Base und deckt sie':'Läuft nach vorn zum Bunt',R[0]&&R[1]?'3B':[164,300]);
+      set('P','Läuft nach vorn zum Bunt',[200,304]);
+      set('C','Ruft laut, wohin geworfen wird, und deckt das Home Plate','H');
+    }else if(t==='pop'){
+      set('1B','Deckt die 1. Base','1B');set(c2,'Deckt die 2. Base','2B');
+      set('3B','Deckt die 3. Base','3B');set('SS',F==='3B'?'Deckt die 3. Base':'Sichert den Fielder ab');set('2B','Sichert den Fielder ab');
+      set('P','Zeigt auf den Ball und macht Platz');set('C','Bleibt am Home Plate und deckt es');
+    }else{
+      set('1B','Deckt die 1. Base','1B');
+      set(c2,'Deckt die 2. Base','2B');
+      if(F==='3B')set('SS','Deckt die 3. Base','3B');
+      set('3B','Deckt die 3. Base','3B');
+      set('SS','Geht Richtung Ball und sichert ab');set('2B','Geht Richtung Ball und sichert ab');
+      if(t==='ground'&&['1B','2B'].includes(F))set('P','Läuft zur 1. Base','1B');
+      set('P','Bleibt in der Mitte und sichert je nach Wurf ab');
+      if(!any&&!P.noThrow)set('C','Läuft an der Foul-Linie hinter die 1. Base zum Absichern',[276,302]);
+      set('C','Bleibt am Home Plate und deckt es');
+    }
+    if(t==='pop'){['LF','CF','RF'].forEach(k=>set(k,'Kommt nach vorn und sichert den Fielder ab'));}
+    else{
+      set('RF',thr.includes('1B')?'Läuft hinter die 1. Base zum Absichern':'Kommt nach innen und sichert ab',thr.includes('1B')?[290,250]:null);
+      set('CF',thr.includes('2B')?'Läuft hinter die 2. Base zum Absichern':'Kommt nach innen und sichert die 2. Base ab',thr.includes('2B')?[200,178]:null);
+      set('LF',thr.includes('3B')?'Läuft hinter die 3. Base zum Absichern':'Kommt nach innen und sichert die 3. Base ab',thr.includes('3B')?[116,262]:null);
+    }
+  }else{
+    const back={LF:[['CF','Sichert hinter dem Left Fielder ab',[150,120]],['RF','Kommt Richtung Mitte']],CF:[['LF','Sichert hinter dem Center Fielder ab',[150,96]],['RF','Sichert hinter dem Center Fielder ab',[250,96]]],RF:[['CF','Sichert hinter dem Right Fielder ab',[250,120]],['LF','Kommt Richtung Mitte']]}[F];
+    back.forEach(([k,txt,pos])=>set(k,txt,pos));
+    const c2o=c2===P.cut?(c2==='SS'?'2B':'SS'):c2;
+    set(c2o,'Deckt die 2. Base','2B');
+    ['SS','2B'].forEach(k=>set(k,'Geht Richtung Ball in die Wurflinie',lerpP(B['2B'],SPOT[t][F],.25)));
+    set('1B','Deckt die 1. Base','1B');set('3B','Deckt die 3. Base','3B');
+    set('C','Deckt das Home Plate','H');
+    if(tg==='H')set('P','Sichert hinter dem Home Plate ab',[200,374]);
+    else if(tg==='3B')set('P','Sichert hinter der 3. Base ab',[122,306]);
+    else if(P.noThrow)set('P','Geht zurück zum Mound');
+    else set('P','Geht zwischen Home Plate und 3. Base, bereit zum Absichern',[176,314]);
+  }
+  /* doppelte Basendeckung vermeiden: wer zuerst eine Base bekommt, behält sie */
+  const used={};Object.keys(mv).forEach(k=>{const v=mv[k];if(typeof v==='string'){if(used[v]&&k!==F){delete mv[k];}else used[v]=k;}});
+  return {d,mv};
+}
+
+function options(F,t,R,o,P,rnd){
+  const correct=P.label,opts=[correct];
+  const add=x=>{if(x&&!opts.includes(x)&&opts.length<4)opts.push(x);};
+  if(t==='pop'){
+    add('Ball absichtlich fallen lassen und ein Double Play spielen');
+    add(P.iff?'Normal fangen, die Infield-Fly-Regel gilt hier nicht':'Es gilt Infield Fly: Der Batter ist automatisch aus');
+    add('Nicht rufen: Wer zuerst da ist, fängt');
+  }else{
+    const first=P.throws.find(k=>k[0]!=='p'),cand=['2B','1B','3B','H'].filter(b=>b!==first);
+    if(P.noThrow){add('Sofort zur 1. Base werfen');add('Zur 2. Base werfen');add('Zum Home Plate werfen');}
+    else{
+      cand.sort((a,b)=>{const w=x=>(x==='1B'?0:x==='2B'&&R[0]?0:x==='3B'&&(R[1]||R[0])?1:x==='H'&&(R[2]||R[1])?1:3);return w(a)-w(b);});
+      cand.forEach(b=>add(cap(BZ[b])));
+      if(opts.length<4)add('Ball festhalten, kein Wurf');
+    }
+  }
+  /* mischen (fester Zufall pro Situation) */
+  const order=opts.map((x,i)=>[rnd(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+  return {opts:order,ok:order.indexOf(correct)};
+}
+
+function runDeltas(t,R,o){
+  const fb=forceBases(R);
+  const forced=i=>fb.includes(['2B','3B','H'][i]);
+  return [
+    {ground:.55,line:.25,pop:.3,bunt:.55,fly:.4,single:.9,gap:1.5}[t],
+    ...[0,1,2].map(i=>!R[i]?0:t==='ground'||t==='bunt'?(forced(i)?.45:.12):t==='line'?.3:t==='pop'?.08:t==='fly'?(o===2?.6:.1):t==='single'?(i===0?.8:1):1.4)
+  ];
+}
+
+function make(){
+  const out=[];
+  ORDER.forEach(F=>TYPES[F].forEach(t=>{
+    for(let r=0;r<8;r++){const R=[r&1?1:0,r&2?1:0,r&4?1:0];
+      for(let o=0;o<3;o++){
+        const id=`g_${F}_${t}_${R.join('')}_${o}`,rnd=rng(hash(id));
+        const P=decide(F,t,R,o),{d,mv}=plan(F,t,R,o,P),{opts,ok}=options(F,t,R,o,P,rnd);
+        const hit={type:HIT[t],to:SPOT[t][F],dur:DUR[t]};
+        const duties=ORDER.map(k=>[k,d[k]||'Bleibt auf seiner Position']);
+        const sit=`${rtxt(R)} · ${otxt(o)}`;
+        const base={pos:F,gen:true,focus:[F],title:title(F,t),sit,runners:R,outs:o,hit,run:runDeltas(t,R,o),moves:mv,throws:P.throws,relay:P.relay,duties};
+        out.push(Object.assign({},base,{id,q:`${sit}. ${t==='pop'?'Was macht':P.noThrow?'Was macht':'Wohin wirft'} der ${PN(F)}?`,opts,ok,why:P.why}));
+        /* Rollenfrage: Was macht ein Spieler ohne Ball? */
+        const prio=k=>{const x=d[k]||'';return /Cutoff|Relay/.test(x)?0:/nimmt den Wurf an/.test(x)?1:/Deckt die 2/.test(x)?2:/Absichern|sichert/.test(x)?3:/Deckt/.test(x)?4:5;};
+        const cands=ORDER.filter(k=>k!==F&&d[k]).sort((a,b)=>prio(a)-prio(b)||ORDER.indexOf(a)-ORDER.indexOf(b));
+        const ask=cands[Math.floor(rnd()*Math.min(3,cands.length))];
+        if(ask){
+          const cls=x=>{const m=x.match(/(hinter|Deckt|deckt|sichert)[^.]*?(1\. Base|2\. Base|3\. Base|Home Plate)/);return m?(/eckt/.test(m[1])?'c':'b')+m[2]:x;};
+          const right=d[ask],pool=[...new Set(ORDER.filter(k=>k!==ask&&d[k]&&k!==F&&cls(d[k])!==cls(right)).map(k=>d[k]))];
+          const ro=[right];while(ro.length<4&&pool.length){ro.push(pool.splice(Math.floor(rnd()*pool.length),1)[0]);}
+          if(ro.length<4)ro.push('Bleibt stehen und schaut zu');
+          const sh=ro.map(x=>[rnd(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+          out.push(Object.assign({},base,{id:'r'+id.slice(1)+'_'+ask,ask,focus:[ask],q:`${sit}. Der Ball geht ${OFk(F)}. Was machst du als ${PN(ask)}?`,opts:sh,ok:sh.indexOf(right),why:`Als ${PN(ask)}: ${right}. ${P.why}`}));
+        }
+      }
+    }
+  }));
+  return out;
+}
+const OFk=F=>({LF:'ins Left Field',CF:'ins Center Field',RF:'ins Right Field'}[F]||ZUM[F]);
+return {make};
+})();
+S.push(...GEN.make());
+
+
+let runners=[];
+function makeRunners(s){
+  $('layerRunners').innerHTML='';runners=[];
+  const add=(start,delta)=>{const g=el('g',{},$('layerRunners'));
+    el('circle',{r:6.5,fill:'var(--run)',stroke:'#fff','stroke-width':1.4},g);
+    const r={g,start,delta,p:start};runners.push(r);placeR(r);};
+  if(s.run[0]!==null&&s.run[0]!==undefined) add(0,s.run[0]);
+  else{const g=el('g',{transform:'translate(186,342)'},$('layerRunners'));el('rect',{x:-4,y:-6,width:8,height:12,rx:3,fill:'var(--run)',opacity:.7},g);}
+  [0,1,2].forEach(i=>{if(s.runners[i]) add(i+1+.06,s.run[i+1]||0);});
+}
+function placeR(r){const p=onPath(r.p);r.g.setAttribute('transform',`translate(${p[0]},${p[1]})`);}
+
+/* ---------- timeline ---------- */
+let raf=null,speed=1;
+try{if(matchMedia('(prefers-reduced-motion: reduce)').matches) speed=.35;}catch(e){}
+function play(tasks,done){
+  cancelAnimationFrame(raf);
+  const t0=performance.now();
+  const end=Math.max(0,...tasks.map(t=>t.at+t.dur));
+  const step=now=>{
+    const el=(now-t0)/speed;
+    tasks.forEach(t=>{const x=(el-t.at)/t.dur;if(x>=0&&!t.fin){t.fn(Math.min(1,x));if(x>=1)t.fin=true;}});
+    if(el<end) raf=requestAnimationFrame(step); else done&&done();
+  };
+  raf=requestAnimationFrame(step);
+}
+
+/* ---------- game state ---------- */
+let queue=[],qi=0,cur=null,answered=false;
+const FILTERS={kind:'ALL',pos:'ALL',run:'ALL',out:'ALL',ask:'ALL'};
+const stats={right:0,total:0,mastered:{}};
+try{const m=JSON.parse(localStorage.getItem('wmb-mastered')||'{}');if(m&&typeof m==='object')stats.mastered=m;}catch(e){}
+function saveM(){try{localStorage.setItem('wmb-mastered',JSON.stringify(stats.mastered));}catch(e){}}
+function updScore(){$('sRight').textContent=stats.right+'/'+stats.total;$('sTotal').textContent=stats.total;
+  $('sMaster').textContent=S.filter(s=>stats.mastered[s.id]).length;$('sMasterL').textContent='von '+S.length+' gelernt';}
+
+function focusOf(s){if(s.focus)return new Set(s.focus);return new Set([s.pos,...Object.keys(s.moves||{}),...Object.keys((s.hit&&s.hit.co)||{})]);}
+const isGame=s=>!!(s.hit||s.pitchTo);
+const MATCH={
+  kind:(s,v)=>kindOf(s)===v||(v==='ground'&&kindOf(s)==='bunt'),
+  pos:(s,v)=>focusOf(s).has(v),
+  run:(s,v)=>isGame(s)&&s.runners.join('')===v,
+  out:(s,v)=>isGame(s)&&s.outs===+v,
+  ask:(s,v)=>v==='ohne'?!!s.ask:!s.ask&&isGame(s)
+};
+const passes=s=>Object.keys(FILTERS).every(k=>FILTERS[k]==='ALL'||MATCH[k](s,FILTERS[k]));
+function buildQueue(){
+  let list=S.filter(passes);
+  $('qCount').textContent=list.length;
+  if(!list.length){toast('Keine Frage passt zu dieser Kombination. Es kommen alle Fragen.');list=S.slice();}
+  list=list.map(s=>[Math.random(),s]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+  list.sort((a,b)=>(stats.mastered[a.id]?1:0)-(stats.mastered[b.id]?1:0));
+  queue=list;qi=0;
+}
+
+function reset(s){
+  ORDER.forEach(k=>{placeF(k,[...HOME[k]]);F[k].ring.setAttribute('opacity',0);});
+  $('layerPaths').innerHTML='';
+  makeRunners(s);placeBall(HOME.P,6);$('stopG').hidden=true;
+  ['1','2','3'].forEach((n,i)=>$('m'+n).setAttribute('fill',s.runners[i]?'var(--lamp)':'none'));
+  $('o1').classList.toggle('on',s.outs>=1);$('o2').classList.toggle('on',s.outs>=2);
+}
+
+function render(s){
+  $('panel').scrollTop=0;$('dutyBtn').hidden=true;
+  if(s.ask){const [n,name]=POS[s.ask];$('posTag').innerHTML=`<span class="num">${n}</span>Du bist ${name}`;}
+  else if(s.kind==='jugend')$('posTag').innerHTML='<span class="num" style="background:var(--accent);color:var(--accent-ink)">J</span>Jugendligen Berlin-Brandenburg 2026';
+  else if(s.kind==='lauf')$('posTag').innerHTML='<span class="num" style="background:var(--run)">R</span>Baserunning · Runner auf Base';
+  else if(s.pos){const [n,name]=POS[s.pos];$('posTag').innerHTML=`<span class="num">${n}</span>${name}`;}
+  else $('posTag').innerHTML='<span class="num" style="background:var(--run)">§</span>Deutsche Baseball Liga 2026';
+  $('title').textContent=s.title;
+  const kd=kindOf(s),kb=$('kind');kb.className='kind '+kd;kb.innerHTML=KICON[kd]+`<span>${KIND[kd]}</span>`;
+  $('sitNo').textContent=`${qi+1}/${queue.length}`;
+  $('question').textContent=s.q;$('question').hidden=true;$('wait').hidden=false;
+  $('fb').hidden=true;$('next').hidden=true;
+  const box=$('opts');box.innerHTML='';
+}
+
+function showQuestion(s){
+  const fk=s.ask||s.pos;if(fk){$('stopG').hidden=false;F[fk].ring.setAttribute('opacity',1);}
+  $('wait').hidden=true;$('question').hidden=false;
+  const box=$('opts');box.innerHTML='';
+  if(answered){paintAnswered();return;}
+  s.opts.forEach((o,i)=>{
+    const b=document.createElement('button');b.type='button';b.className='opt';b.id='opt'+i;
+    b.innerHTML=`<span class="k">${String.fromCharCode(65+i)}</span><span></span>`;b.lastChild.textContent=o;
+    b.addEventListener('click',()=>answer(i));box.appendChild(b);
+  });
+  const f=box.querySelector('button');f&&f.focus({preventScroll:true});
+}
+let lastPick=null;
+function paintAnswered(){
+  const s=cur,box=$('opts');box.innerHTML='';
+  s.opts.forEach((o,i)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.disabled=true;
+    b.innerHTML=`<span class="k">${String.fromCharCode(65+i)}</span><span></span>`;b.lastChild.textContent=o;
+    if(i===s.ok)b.classList.add('right');else b.hidden=true;box.appendChild(b);});
+}
+
+function runPlay(s,then){
+  reset(s);answered=answered&&false;
+  if(s.kind==='regel'||((s.kind==='jugend'||s.kind==='lauf')&&!s.hit&&!s.pitchTo)){cancelAnimationFrame(raf);setTimeout(()=>then&&then(),250);return;}
+  const tasks=[];let t=0;
+  const pitchTo=s.hit?B.H:s.pitchTo;const pd=s.hit?420:650;
+  tasks.push({at:t,dur:pd,fn:x=>placeBall(lerp(HOME.P,pitchTo,x),6+8*x*(1-x))});
+  if(!s.hit){
+    runners.forEach(r=>tasks.push({at:0,dur:pd,fn:x=>{r.p=r.start+r.delta*easeOut(x);placeR(r);}}));
+  } else {
+    t+=pd;const h=s.hit,D=h.dur,to=h.to,from=B.H,d=dist(from,to);
+    const peak=h.type==='fly'?Math.min(120,d*.55+40):h.type==='line'?Math.min(30,d*.12):h.type==='bunt'?3:0;
+    const LP=$('layerPaths'),air=[],gnd=[];
+    const st={ground:{stroke:'var(--chalk)','stroke-width':2,'stroke-dasharray':'1 4','stroke-linecap':'round',opacity:.9},
+      bunt:{stroke:'var(--chalk)','stroke-width':2,'stroke-dasharray':'1 3','stroke-linecap':'round',opacity:.9},
+      line:{stroke:'#fff','stroke-width':1.6,'stroke-dasharray':'6 3',opacity:.8},
+      fly:{stroke:'#fff','stroke-width':1.8,opacity:.9}}[h.type];
+    let shadowLine=null;
+    if(h.type==='fly'){
+      shadowLine=el('polyline',{fill:'none',stroke:'#000','stroke-width':1.4,'stroke-dasharray':'3 4',opacity:.35},LP);
+      const m=el('g',{transform:`translate(${to[0]},${to[1]})`},LP);
+      el('circle',{r:10,fill:'none',stroke:'var(--lamp)','stroke-width':1.8,'stroke-dasharray':'3 2'},m);
+      el('path',{d:'M-3 -3 L3 3 M3 -3 L-3 3',stroke:'var(--lamp)','stroke-width':1.6},m);
+    }
+    const trail=el('polyline',Object.assign({fill:'none'},st),LP);
+    tasks.push({at:t,dur:D,fn:x=>{
+      const gg=h.type==='fly'||h.type==='bunt'?x:easeOut(x),gp=lerp(from,to,gg);
+      let th=peak*4*x*(1-x);if(h.type==='ground'||h.type==='bunt')th=0;
+      if(h.type==='line'&&x>.55)th=0;
+      air.push(`${gp[0].toFixed(1)},${(gp[1]-th).toFixed(1)}`);trail.setAttribute('points',air.join(' '));
+      if(shadowLine){gnd.push(`${gp[0].toFixed(1)},${gp[1].toFixed(1)}`);shadowLine.setAttribute('points',gnd.join(' '));}
+    }});
+    tasks.push({at:t,dur:D,fn:x=>{
+      const g=h.type==='fly'||h.type==='bunt'?x:easeOut(x);
+      let hh=peak*4*x*(1-x);if(h.type==='ground')hh=4*Math.abs(Math.sin(x*Math.PI*3))*(1-x);
+      if(h.type==='line'&&x>.55){const y=(x-.55)/.45;hh=Math.max(0,peak*4*.55*.45*(1-y))*0+3*Math.abs(Math.sin(y*Math.PI*2))*(1-y);}
+      placeBall(lerp(from,to,g),hh);}});
+    const mv=(k,target,start,dur)=>{const a=[...HOME[k]];tasks.push({at:start,dur,fn:x=>placeF(k,lerp(a,target,ease(x)))});};
+    if(s.pos)mv(s.pos,to,t+D*.12,D*.88);
+    for(const k in (h.co||{})) mv(k,h.co[k],t+D*.1,D*.9);
+    runners.forEach(r=>tasks.push({at:t,dur:D,fn:x=>{r.p=r.start+r.delta*easeOut(x);placeR(r);}}));
+  }
+  play(tasks,then);
+}
+
+function resolve(key,dest){
+  if(Array.isArray(key))return key;
+  if(B[key])return B[key];
+  if(key[0]==='p'){const k=key.slice(1);return dest[k]||F[k].pos;}
+}
+/* Wer nimmt den Ball an? */
+const BASEN={'1B':'1. Base','2B':'2. Base','3B':'3. Base','H':'Home Plate'};
+const DEF_RCV={'1B':'1B','3B':'3B','H':'C'};
+const RELAY=new Set(['cfgap','rfline','rcR1','lfLine1']);
+function thrower(s){return s.hit?s.pos:'C';}
+function receiverOf(s,key){
+  if(Array.isArray(key))return null;
+  if(key[0]==='p')return key.slice(1);
+  for(const k in s.moves)if(s.moves[k]===key)return k;
+  return DEF_RCV[key]||null;
+}
+function allMoves(s){
+  const mv={...s.moves},taken=Object.values(s.moves);
+  s.throws.forEach(key=>{if(key[0]==='p'||taken.includes(key))return;const r=DEF_RCV[key];if(r&&r!==thrower(s)&&!(r in mv))mv[r]=key;});
+  return mv;
+}
+function routeHTML(s){
+  if(!s.throws||!s.throws.length)return '';
+  let from=thrower(s);const out=[`<b>${POS[from][1]}</b>`];
+  s.throws.forEach(key=>{const r=receiverOf(s,key);
+    if(Array.isArray(key)){out.push('Wurf geht über die 1. Base hinweg ins Aus');return;}
+    if(key[0]==='p')out.push(`<b>${POS[r][1]}</b> als ${(s.relay||RELAY.has(s.id))?'Relay-Mann':'Cutoff'}`);
+    else out.push(`${BASEN[key]}: <b>${r===from?POS[r][1]+'</b> tritt selbst':POS[r][1]+'</b>'}`);
+    from=r||from;});
+  return out.join(' <span class="arr">→</span> ');
+}
+function runAfter(s){
+  const tasks=[],dest={},mv=allMoves(s);
+  for(const k in mv){const v=mv[k];const target=typeof v==='string'?[B[v][0]+4,B[v][1]-6]:v;dest[k]=target;
+    const a=[...F[k].pos];tasks.push({at:0,dur:650,fn:x=>placeF(k,lerp(a,target,ease(x)))});}
+  let from=s.hit?s.hit.to:s.pitchTo,t=s.throws.length&&Object.keys(mv).length?450:150;
+  s.throws.forEach(key=>{const a=[...from],b=resolve(key,dest),d=dist(a,b),dur=Math.max(320,d*3.2),r=receiverOf(s,key);
+    tasks.push({at:t,dur,fn:x=>{placeBall(lerp(a,b,x),d*.12*4*x*(1-x));if(x>=1&&r&&F[r]){ORDER.forEach(k=>F[k].ring.setAttribute('opacity',0));F[r].ring.setAttribute('opacity',1);}}});
+    t+=dur+180;from=b;});
+  if(s.pos)F[s.pos].ring.setAttribute('opacity',0);
+  if(tasks.length)play(tasks);
+}
+
+function answer(i){
+  if(answered||!cur)return;answered=true;lastPick=i;
+  const s=cur,ok=i===s.ok,first=ok&&!stats.mastered[s.id],prevStreak=prof.streak;
+  stats.total++;if(ok){stats.right++;stats.mastered[s.id]=true;saveM();}
+  const gain=reward(ok,first);
+  updScore();paintAnswered();
+  $('fb').hidden=false;$('fb').classList.toggle('no',!ok);
+  $('fbH').textContent=ok?'Richtig':'Nicht ganz (du: '+String.fromCharCode(65+i)+')';
+  $('fbT').textContent=s.why;$('question').hidden=true;$('viewTrain').classList.add('done');
+  if(s.src){const q=document.createElement('span');q.className='src';q.textContent='Quelle: '+s.src;$('fbT').appendChild(q);}
+  const rt=routeHTML(s);
+  if(rt){const r=document.createElement('span');r.className='route';r.innerHTML='<span class="rl">Wurfweg · wer annimmt</span>'+rt;$('fbT').appendChild(r);}
+  const e=document.createElement('span');e.className='earn';
+  if(gain){e.innerHTML=`<i class="coin"></i>+${gain.sum} Coins <small>${gain.parts.map(p=>p[0]+' +'+p[1]).join(' · ')}</small>`;}
+  else if(prevStreak>=3){e.innerHTML=`<small>Serie von ${prevStreak} beendet</small>`;}
+  if(e.innerHTML)$('fbT').appendChild(e);
+  $('next').hidden=false;$('dutyBtn').hidden=!s.duties;$('next').focus({preventScroll:true});
+  $('stopG').hidden=true;
+  runAfter(s);
+}
+
+function start(){
+  if(!queue.length)buildQueue();
+  if(qi>=queue.length){buildQueue();}
+  cur=queue[qi];answered=false;lastPick=null;$('viewTrain').classList.remove('done');render(cur);
+  runPlay(cur,()=>showQuestion(cur));
+}
+$('next').addEventListener('click',()=>{qi++;start();});
+$('replay').addEventListener('click',()=>{if(!cur)return;
+  const was=answered;$('stopG').hidden=true;
+  runPlay(cur,()=>{if(was){answered=true;const fk=cur.ask||cur.pos;if(!fk)return;$('stopG').hidden=false;F[fk].ring.setAttribute('opacity',1);
+      setTimeout(()=>{$('stopG').hidden=true;runAfter(cur);},500);}else showQuestion(cur);});});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){document.querySelectorAll('.sheet').forEach(x=>x.hidden=true);return;}
+  if(e.target.tagName==='INPUT'||$('viewTrain').hidden||[...document.querySelectorAll('.sheet')].some(x=>!x.hidden))return;
+  const n=parseInt(e.key,10);
+  if(n>=1&&n<=4&&!answered&&cur&&!$('question').hidden&&n<=cur.opts.length){answer(n-1);}
+  else if(e.key==='Enter'&&answered&&document.activeElement===document.body){qi++;start();}
+});
+
+/* Filter */
+const FGROUPS={
+  kind:['chipsKind',[['ALL','Alles'],['ground','Groundballs & Bunts'],['fly','Fly Balls & Pop-ups'],['line','Line Drives & Hits'],['lauf','Baserunning'],['regel','Regeln DBL'],['jugend','Jugendregeln Berlin-Brandenburg']]],
+  pos:['chips',[['ALL','Alle'],...ORDER.map(k=>[k,POS[k][1]])]],
+  run:['chipsRun',[['ALL','Alle'],['000','Keine'],['100','1'],['010','2'],['001','3'],['110','1 und 2'],['101','1 und 3'],['011','2 und 3'],['111','Bases loaded']]],
+  out:['chipsOut',[['ALL','Alle'],['0','0 Outs'],['1','1 Out'],['2','2 Outs']]],
+  ask:['chipsAsk',[['ALL','Alle Fragen'],['ball','Spieler mit Ball'],['ohne','Spieler ohne Ball']]]
+};
+function filterLabel(){
+  const parts=Object.keys(FILTERS).filter(k=>FILTERS[k]!=='ALL').map(k=>{const it=FGROUPS[k][1].find(x=>x[0]===FILTERS[k]);return k==='run'?'Runner '+it[1]:it[1];});
+  $('filterLbl').textContent=parts.length?parts.join(' · '):'Alles';
+}
+function paintFilters(){Object.keys(FGROUPS).forEach(k=>[...$(FGROUPS[k][0]).children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===FILTERS[k])));filterLabel();}
+Object.keys(FGROUPS).forEach(k=>{
+  const [el,items]=FGROUPS[k];
+  items.forEach(([v,label])=>{
+    const cnt=v==='ALL'?S.length:S.filter(s=>MATCH[k](s,v)).length;
+    const b=document.createElement('button');b.type='button';b.className='chip'+(k==='pos'&&v!=='ALL'?'':' all');b.dataset.v=v;
+    b.innerHTML=(k==='pos'&&v!=='ALL'?`<span class="n">${POS[v][0]}</span>`:'')+(k==='kind'&&v!=='ALL'?`<span class="kind ${v}" style="border:0;padding:0">${KICON[v]||''}</span>`:'')+`<span>${label}${v==='ALL'?'':' ('+cnt+')'}</span>`;
+    b.addEventListener('click',()=>{FILTERS[k]=v;paintFilters();buildQueue();start();});
+    $(el).appendChild(b);
+  });
+});
+paintFilters();
+$('filterBtn').addEventListener('click',()=>{updScore();$('filterSheet').hidden=false;});
+document.querySelectorAll('.sheet').forEach(sh=>{
+  sh.addEventListener('click',e=>{if(e.target===sh||e.target.closest('[data-close]'))sh.hidden=true;});
+});
+$('dutyBtn').addEventListener('click',()=>{
+  const s=cur;if(!s||!s.duties)return;const me=s.ask||s.pos;
+  $('dutySit').textContent=`${s.title} · ${s.sit}`;
+  $('dutyList').innerHTML=s.duties.map(([k,t])=>`<li class="${k===me?'me':''}"><span class="n">${POS[k][0]}</span><div><b>${POS[k][1]}${k===s.pos?' · hat den Ball':''}</b><span>${esc(t)}</span></div></li>`).join('');
+  $('dutySheet').hidden=false;
+});
+document.querySelectorAll('[data-quiz]').forEach(b=>b.addEventListener('click',()=>{
+  Object.keys(FILTERS).forEach(k=>FILTERS[k]='ALL');FILTERS.kind=b.dataset.quiz;paintFilters();buildQueue();showView('train');start();
+}));
+
+/* ================= Belohnungen, Avatar, Shop ================= */
+const FD='Barlow Condensed, Arial Narrow, sans-serif';
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const SKINS=['#f6d7c3','#e8b896','#d29a6e','#a86f48','#7a4b2e','#4e2f1d'];
+const HAIRS=['#2a1d15','#5a3a22','#a0662f','#d9b26a','#9b3b1e','#9a9a9a'];
+const STYLES=[['kurz','Kurz'],['lang','Lang'],['zopf','Zopf'],['bart','Kurz mit Bart']];
+const RANKS=[[0,'Rookie'],[150,'Stammspieler'],[400,'Starter'],[800,'All-Star'],[1500,'MVP'],[3000,'Hall of Fame']];
+const CATS=[['cap','Caps & Helme'],['jersey','Trikots'],['shoe','Schuhe'],['bat','Bats'],['muscle','Muskeln'],['build','Körperform'],['bg','Stadion']];
+const SHOP={
+cap:[
+ {id:'c0',name:'Trainingscap Navy',crown:'#1c2f5e',brim:'#1c2f5e',letter:'#ffffff',price:0,desc:'Deine Start-Cap: Wolloptik, sechs Panels, Knopf oben.'},
+ {id:'c1',name:'Cap Rot mit Navy-Schirm',crown:'#b3261e',brim:'#1c2f5e',letter:'#ffffff',price:60,desc:'Fitted Cap mit geradem Schirm. Den Buchstaben vorne liefert dein Trikot-Team.'},
+ {id:'c2',name:'Cap Schwarz-Gold',crown:'#1b1b1d',brim:'#1b1b1d',letter:'#d4a72c',price:80,desc:'Ganz in Schwarz mit goldenem Buchstaben.'},
+ {id:'c3',name:'Cap Royal',crown:'#2a4d9b',brim:'#2a4d9b',letter:'#ffffff',price:80,desc:'Klassisches Königsblau.'},
+ {id:'c4',name:'Cap Grün-Gold',crown:'#1f5a3a',brim:'#d4a72c',letter:'#d4a72c',price:100,desc:'Grüne Krone, goldener Schirm.'},
+ {id:'c5',name:'Two-Tone-Cap',crown:'#1c2f5e',front:'#f4f4f1',brim:'#1c2f5e',letter:'#1c2f5e',price:120,desc:'Weiße Front-Panels, typisch für Batting-Practice-Caps.'},
+ {id:'c6',name:'Schlaghelm Navy matt',helmet:true,crown:'#22355f',brim:'#22355f',letter:'#ffffff',price:150,desc:'Mit Ohrenschutz auf der dem Pitcher zugewandten Seite. Für Batter und Runner Pflicht (BuSpO Art. 4.3.01).'},
+ {id:'c7',name:'Schlaghelm Schwarz glänzend',helmet:true,gloss:true,crown:'#1a1b1e',brim:'#1a1b1e',letter:'#d4a72c',price:250,desc:'Hochglanz-Lack, goldener Buchstabe. Gleicher Schutz wie der matte Helm.'}
+],
+jersey:[
+ {id:'j0',team:'Coach Toby',name:'Trainingsshirt',word:'TEAM TOBY',abbr:'T',style:'tee',base:'#c4c9ce',trim:'#1c2f5e',pants:'#eef0f2',socks:'#1c2f5e',price:0,desc:'Dein Start-Shirt fürs Training.'},
+ {id:'j1',team:'Spree Sharks',name:'Heimtrikot',word:'Sharks',abbr:'S',style:'pin',base:'#fbfbf8',stripe:'#1c2f5e',trim:'#1c2f5e',pants:'#fbfbf8',pinPants:true,socks:'#1c2f5e',price:150,desc:'Weiß mit Nadelstreifen, der Klassiker unter den Heimtrikots. Die Hose hat dieselben Streifen.'},
+ {id:'j2',team:'Havel Comets',name:'Auswärtstrikot',word:'COMETS',abbr:'C',style:'plain',base:'#a7abb0',trim:'#b3261e',pants:'#a7abb0',socks:'#b3261e',price:150,desc:'Auswärtsteams tragen traditionell Grau. Als Grund gilt, dass früher unterwegs seltener gewaschen werden konnte.'},
+ {id:'j3',team:'Müggelsee Gulls',name:'Batting-Practice-Shirt',word:'GULLS',abbr:'G',style:'raglan',base:'#f6f6f3',sleeve:'#0f7c86',trim:'#0f7c86',pants:'#b9bdc1',socks:'#0f7c86',price:180,desc:'Raglan-Schnitt mit farbigen Ärmeln, typisch fürs Aufwärmen und die Batting Practice.'},
+ {id:'j4',team:'Tempelhof Aces',name:'Alternate-Trikot',word:'ACES',abbr:'A',style:'plain',base:'#1b1b1d',trim:'#f07b1c',pants:'#ecebe7',socks:'#1b1b1d',belt:'#f07b1c',price:200,desc:'Alternate-Trikots kommen zu Heim und Auswärts dazu, oft an Sonntagen oder bei Sonderspielen.'},
+ {id:'j5',team:'Wannsee Waves',name:'Heimtrikot',word:'Waves',abbr:'W',style:'plain',base:'#18456b',trim:'#e3c58f',pants:'#f4f4f1',socks:'#18456b',price:220,desc:'Dunkelblau mit sandfarbener Schrift.'},
+ {id:'j6',team:'Köpenick Kings',name:'Retro-Trikot',word:'KINGS',abbr:'K',style:'button',base:'#efe6cf',trim:'#2a4d9b',placket:'#2a4d9b',pants:'#efe6cf',socks:'#2a4d9b',price:250,desc:'Cremefarben mit farbiger Knopfleiste. Durchgeknöpfte Trikots sind seit über 100 Jahren Standard, nur in den 70ern und 80ern waren Pullover-Trikots Mode.'},
+ {id:'j7',team:'Spandau Stars',name:'Heimtrikot',word:'Stars',abbr:'S',style:'button',base:'#ffffff',trim:'#c1121f',placket:'#c1121f',pants:'#ffffff',socks:'#c1121f',belt:'#c1121f',price:300,desc:'Weiß mit roter Knopfleiste und roter Schrift.'},
+ {id:'j8',team:'All-Star Game',name:'All-Star-Edition',word:'ALL-STAR',abbr:'★',style:'pin',base:'#1b1b1d',stripe:'#d4a72c',trim:'#d4a72c',pants:'#1b1b1d',pinPants:true,socks:'#d4a72c',belt:'#d4a72c',price:500,desc:'Schwarz mit goldenen Nadelstreifen. Das teuerste Trikot im Shop.'}
+],
+shoe:[
+ {id:'s0',name:'Turf-Schuhe',upper:'#202226',accent:'#e9e9e6',sole:'#e9e9e6',type:'turf',price:0,spec:'Kunstrasen · Halle · Training',desc:'Flache Gummisohle mit vielen kleinen Noppen. Schont die Gelenke auf harten Böden.'},
+ {id:'s1',name:'Gummistollen Schwarz-Weiß',upper:'#1b1b1d',accent:'#ffffff',sole:'#ffffff',type:'molded',price:80,spec:'Molded Cleats · Low-Cut',desc:'Feste Stollen aus Gummi oder TPU. Guter Grip, in fast allen Ligen erlaubt, auch im Nachwuchs.'},
+ {id:'s2',name:'Gummistollen Weiß-Rot',upper:'#f4f4f1',accent:'#c1121f',sole:'#c1121f',type:'molded',price:100,spec:'Molded Cleats · Low-Cut',desc:'Gleiche Technik in Weiß mit roten Akzenten.'},
+ {id:'s3',name:'Metallstollen Low-Cut',upper:'#1b1b1d',accent:'#b8bfc6',sole:'#1b1b1d',type:'metal',price:180,spec:'Metal Cleats · Low-Cut',desc:'Metallspikes greifen am besten auf Naturrasen und im Infield-Sand. In den Nachwuchsligen Berlin-Brandenburg nur beim BSVBB-Pokal erlaubt (DVO 2026, Art. 4.2.03).'},
+ {id:'s4',name:'Metallstollen Mid-Cut',upper:'#1c2f5e',accent:'#ffffff',sole:'#1c2f5e',type:'metal',cut:'mid',price:220,spec:'Metal Cleats · Mid-Cut',desc:'Höherer Schaft für mehr Halt am Knöchel.'},
+ {id:'s5',name:'Metallstollen Gold',upper:'#d4a72c',accent:'#1b1b1d',sole:'#1b1b1d',type:'metal',price:400,spec:'Metal Cleats · Low-Cut',desc:'All-Star-Farbe, gleiche Technik wie die schwarzen Spikes.'}
+],
+bat:[
+ {id:'b0',name:'Esche',type:'wood',handle:'#e2c48f',barrel:'#e2c48f',price:0,spec:'33 Zoll · 30 oz · Drop −3',dbl:'In der DBL erlaubt',dblOk:true,desc:'Das traditionelle Bat-Holz: flexibel und verzeiht unsaubere Treffer. Mit der Zeit blättert das Holz entlang der Maserung ab.'},
+ {id:'b1',name:'Ahorn',type:'wood',handle:'#f0dcac',barrel:'#f0dcac',price:150,spec:'33 Zoll · 30 oz · Drop −3',dbl:'In der DBL erlaubt',dblOk:true,desc:'Sehr dichtes, hartes Holz und heute bei den meisten Profis die erste Wahl. Schwerer und weniger flexibel als Esche.'},
+ {id:'b2',name:'Birke',type:'wood',handle:'#e6cc98',barrel:'#d9b77e',price:150,spec:'33 Zoll · 30 oz · Drop −3',dbl:'In der DBL erlaubt',dblOk:true,desc:'Liegt zwischen Esche und Ahorn: härter als Esche, flexibler als Ahorn.'},
+ {id:'b3',name:'Bambus-Verbund',type:'bamboo',handle:'#d8c27a',barrel:'#d8c27a',price:200,spec:'33 Zoll · 30 oz · Drop −3',dbl:'DBL: nur mit Zulassung (Anhang 1 BuSpO)',dblOk:null,desc:'Aus verleimten Bambusstreifen, sehr bruchfest und beliebt im Training. Gilt als holzähnlicher Schläger.'},
+ {id:'b4',name:'Alu BBCOR',type:'alu',handle:'#b8bfc6',barrel:'#b8bfc6',grip:'#1b1b1d',price:220,spec:'32 Zoll · 29 oz · Drop −3',dbl:'In der DBL nicht erlaubt',dblOk:false,desc:'Aluminium nach der US-College-Norm BBCOR, die höchstens Drop −3 erlaubt. Verbreitet in Nachwuchs- und Amateurligen.'},
+ {id:'b5',name:'Composite Jugend',type:'comp',handle:'#1b1b1d',barrel:'#1b1b1d',band:'#c1121f',grip:'#c1121f',price:250,spec:'29 Zoll · 19 oz · Drop −10',dbl:'Nur für Jugendligen',dblOk:false,desc:'Verbundmaterial aus Carbonfasern. Leicht und schnell im Schwung, gedacht für junge Spielerinnen und Spieler.'},
+ {id:'b6',name:'Ahorn Pro Two-Tone',type:'wood',handle:'#f0dcac',barrel:'#1b1b1d',price:300,spec:'34 Zoll · 31 oz · Drop −3',dbl:'In der DBL erlaubt',dblOk:true,desc:'Ahorn mit schwarz lackiertem Barrel und naturbelassenem Griff.'}
+]};
+const START={cap:'c0',jersey:'j0',shoe:'s0',bat:'b0',muscle:'m0',build:'f0',height:'h0',bg:'bg0'};
+const TIP_POWER='Im echten Training kommt Schlagkraft vor allem aus Beinen, Hüfte und Rumpf, nicht nur aus den Armen.';
+Object.assign(SHOP,{
+muscle:[
+ {id:'m0',name:'Grundfitness',lvl:0,price:0,desc:'Dein Start: normal trainiert.'},
+ {id:'m1',name:'Trainiert',lvl:1,price:120,spec:'Muskel-Stufe 1 von 3',desc:'Etwas breitere Schultern und kräftigere Arme.',tip:TIP_POWER},
+ {id:'m2',name:'Kraftpaket',lvl:2,price:260,spec:'Muskel-Stufe 2 von 3',desc:'Deutlich mehr Muskeln an Schultern, Brust und Armen.',tip:TIP_POWER},
+ {id:'m3',name:'Power-Hitter',lvl:3,price:450,spec:'Muskel-Stufe 3 von 3',desc:'Die höchste Muskelstufe für die ganz weiten Schläge.',tip:TIP_POWER}
+],
+build:[
+ {id:'f0',name:'Normal',sx:1,price:0,desc:'Ausgewogene Statur.'},
+ {id:'f1',name:'Schlank',sx:.9,price:100,desc:'Schmale, flinke Statur, wie gemacht für Steals und das Outfield.'},
+ {id:'f2',name:'Athletisch',sx:1.07,price:150,desc:'Etwas breiter gebaut, passt auf jede Position.'},
+ {id:'f3',name:'Kräftig',sx:1.15,price:200,desc:'Breit und stabil, wie viele Catcher und First Baseman.'}
+],
+height:[
+ {id:'h0',name:'Standardgröße',sy:1,price:0,desc:'Deine Startgröße.'},
+ {id:'h1',name:'Größe +5 cm',sy:1.04,price:80,spec:'+5 cm',desc:'Ein Stück größer als am Anfang.'},
+ {id:'h2',name:'Größe +10 cm',sy:1.08,price:160,spec:'+10 cm',desc:'Mehr Reichweite, z. B. als First Baseman beim Strecken nach Würfen.'},
+ {id:'h3',name:'Größe +15 cm',sy:1.12,price:300,spec:'+15 cm',desc:'Die größte Stufe. Lange Hebel bringen Pitchern einen Release näher an der Platte.'}
+],
+bg:[
+ {id:'bg0',name:'Trainingsplatz',price:0,desc:'Dein Start-Hintergrund: der heimische Trainingsplatz.'},
+ {id:'bg1',name:'Hohe grüne Wand',team:'Im Stil von Boston',price:200,desc:'Eine über 11 Meter hohe grüne Wand im linken Feld, die Anzeigetafel wird noch von Hand bedient.'},
+ {id:'bg2',name:'Efeu-Wand',team:'Im Stil von Chicago',price:200,desc:'Die Außenfeldwand ist mit Efeu bewachsen, darüber eine handbediente Anzeigetafel mit Uhr und Fahnen.'},
+ {id:'bg3',name:'Ballpark an der Bucht',team:'Im Stil von San Francisco',price:250,desc:'Homeruns über die rechte Mauer landen im Wasser, wo Fans in Kajaks auf den Ball warten.'},
+ {id:'bg4',name:'Wüsten-Ballpark mit Pool',team:'Im Stil von Phoenix',price:250,desc:'Ein Pool im Außenfeld und ein Dach, das wegen der Wüstenhitze geschlossen werden kann.'},
+ {id:'bg5',name:'Flutlicht-Nacht mit Bogen-Fries',team:'Im Stil von New York',price:300,desc:'Riesige Tribünen unter Flutlicht, typisch ist der weiße Bogen-Fries am Dach.'},
+ {id:'bg6',name:'Felsen mit Wasserfall',team:'Im Stil von Anaheim',price:300,desc:'Im Außenfeld steht eine Felslandschaft mit Wasserfall und Fontänen, die nach Homeruns sprühen.'},
+ {id:'bg7',name:'Fluss und gelbe Brücke',team:'Im Stil von Pittsburgh',price:350,desc:'Blick über den Fluss auf die Skyline der Innenstadt und eine gelbe Brücke.'}
+]});
+
+const AV0={name:'Spieler',num:7,skin:1,hair:0,style:'kurz'};
+const prof={coins:30,earned:0,streak:0,best:0,owned:Object.values(START),eq:{...START},av:{...AV0}};
+try{const p=JSON.parse(localStorage.getItem('wb-profile')||'null');
+  if(p&&typeof p==='object'){['coins','earned','streak','best'].forEach(k=>{if(typeof p[k]==='number')prof[k]=p[k];});
+    if(Array.isArray(p.owned))prof.owned=[...new Set([...Object.values(START),...p.owned])];
+    prof.eq=Object.assign({...START},p.eq||{});prof.av=Object.assign({...AV0},p.av||{});}}catch(e){}
+function saveP(){try{localStorage.setItem('wb-profile',JSON.stringify(prof));}catch(e){}}
+/* Größe gibt es nicht mehr im Shop: gekaufte Stufen werden erstattet */
+(()=>{const H={h1:80,h2:160,h3:300};let back=0;
+  prof.owned=prof.owned.filter(id=>{if(H[id]){back+=H[id];return false;}return true;});prof.eq.height='h0';
+  if(back){prof.coins+=back;saveP();setTimeout(()=>toast(`<i class="coin"></i>+${back} Coins zurück: Die Größe gibt es nicht mehr im Shop`),900);}})();
+const item=(cat,id)=>SHOP[cat].find(x=>x.id===id)||SHOP[cat][0];
+function rankOf(e){let i=0;RANKS.forEach((r,k)=>{if(e>=r[0])i=k;});return {i,name:RANKS[i][1],next:RANKS[i+1]||null,base:RANKS[i][0]};}
+
+let toastT=null;
+function toast(html){const t=$('toast');t.innerHTML=html;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2300);}
+function updCoins(pulse){$('sCoins').textContent=prof.coins;$('wallet').textContent=prof.coins;
+  if(pulse){const c=$('coinBtn');c.classList.remove('pop');void c.offsetWidth;c.classList.add('pop');}}
+function reward(ok,first){
+  if(!ok){prof.streak=0;saveP();return null;}
+  prof.streak++;prof.best=Math.max(prof.best,prof.streak);
+  const parts=[['Richtig',10]];
+  if(first)parts.push(['Neu gelöst',15]);
+  const st=prof.streak,sb=st===3?10:st===5?25:st===10?50:(st>10&&st%5===0?75:0);
+  if(sb)parts.push([`Serie ${st}`,sb]);
+  const sum=parts.reduce((a,p)=>a+p[1],0),before=rankOf(prof.earned);
+  prof.coins+=sum;prof.earned+=sum;saveP();
+  const after=rankOf(prof.earned);
+  updCoins(true);
+  toast(`<i class="coin"></i>+${sum} Coins`+(after.i>before.i?` · Neuer Rang: ${after.name}`:'')+(st>=3?` · Serie ${st}`:''));
+  return {sum,parts};
+}
+
+/* ---- Zeichnen ---- */
+let uid=0;
+const pinPat=(id,c)=>`<pattern id="${id}" width="5" height="10" patternUnits="userSpaceOnUse"><rect x="2" width="0.9" height="10" fill="${c}" opacity=".8"/></pattern>`;
+function fill2(d,base,pin){return `<path d="${d}" fill="${base}"/>`+(pin?`<path d="${d}" fill="url(#${pin})"/>`:'');}
+function batSVG(b){
+  const body='M-2.2,0 L-2.2,-45 C-2.2,-62 -5.5,-72 -5.5,-85 L-5.5,-128 Q-5.5,-134 0,-134 Q5.5,-134 5.5,-128 L5.5,-85 C5.5,-72 2.2,-62 2.2,-45 L2.2,0 Z';
+  let s=`<path d="${body}" fill="${b.handle}"/>`;
+  if(b.barrel!==b.handle)s+=`<path d="M-5.5,-90 L-5.5,-128 Q-5.5,-134 0,-134 Q5.5,-134 5.5,-128 L5.5,-90 Q0,-86 -5.5,-90 Z" fill="${b.barrel}"/>`;
+  if(b.type==='wood'||b.type==='bamboo'){
+    s+=`<path d="M-1.3,-15 L-2.6,-120" stroke="#000" stroke-opacity=".13" stroke-width=".8" fill="none"/><path d="M1.4,-25 L2.8,-122" stroke="#fff" stroke-opacity=".35" stroke-width="1" fill="none"/>`;
+    if(b.type==='bamboo')for(let y=-58;y>-130;y-=13)s+=`<path d="M${y>-80?-4:-5.5},${y} L${y>-80?4:5.5},${y}" stroke="#6e5a22" stroke-width=".8" opacity=".55"/>`;
+    else s+=`<rect x="-3.2" y="-104" width="6.4" height="9" rx="1.5" fill="#2a1d15" opacity="${b.barrel==='#1b1b1d'?0:.45}"/>`;
+  }else if(b.type==='alu'){
+    s+=`<path d="M1.6,-48 L3.2,-128" stroke="#fff" stroke-opacity=".6" stroke-width="1.5"/><path d="M-3.4,-70 L-4.4,-126" stroke="#000" stroke-opacity=".18" stroke-width="1.5"/><rect x="-4.6" y="-133.6" width="9.2" height="2.6" rx="1.2" fill="#1b1b1d"/>`;
+  }else{
+    s+=`<path d="M-5.5,-96 L5.5,-104 L5.5,-109 L-5.5,-101 Z M-5.5,-110 L5.5,-118 L5.5,-121 L-5.5,-113 Z" fill="${b.band}"/><path d="M1.6,-48 L3,-128" stroke="#fff" stroke-opacity=".25" stroke-width="1.2"/><rect x="-4.6" y="-133.6" width="9.2" height="2.6" rx="1.2" fill="${b.band}"/>`;
+  }
+  if(b.grip){s+=`<rect x="-2.7" y="-42" width="5.4" height="42" fill="${b.grip}"/>`;for(let i=0;i<6;i++)s+=`<path d="M-2.7,${-3-i*7} L2.7,${-7-i*7}" stroke="#fff" stroke-opacity=".22" stroke-width=".8"/>`;}
+  return s+`<ellipse cx="0" cy="1.6" rx="4.3" ry="2.4" fill="${b.grip||b.handle}" stroke="#000" stroke-opacity=".22" stroke-width=".6"/>`;
+}
+function footSVG(sh){
+  let s='';
+  if(sh.cut==='mid')s+=`<path d="M80,280 L80,270 Q88,267 97,270 L98,281 Z" fill="${sh.upper}"/><path d="M80,272 Q88,269 97,272" stroke="${sh.accent}" stroke-width="1.5" fill="none"/>`;
+  s+=`<path d="M66,294 L98,294 L98,284 Q97,279 89,278 L78,278 Q67,280 66,288 Z" fill="${sh.upper}"/>`;
+  s+=`<path d="M70,289 L96,284 L96,287.5 L71,292 Z" fill="${sh.accent}"/>`;
+  s+=`<rect x="65" y="293.5" width="34" height="3.2" rx="1" fill="${sh.sole}"/>`;
+  if(sh.type==='metal')[69,77,88,95].forEach(x=>s+=`<path d="M${x},296.7 L${x+3},296.7 L${x+2.3},300.8 L${x+.7},300.8 Z" fill="#c9ced3"/>`);
+  else if(sh.type==='molded')[69,75,81,88,94].forEach(x=>s+=`<rect x="${x}" y="296.5" width="3" height="3.4" rx="1.3" fill="#3a3c40"/>`);
+  else for(let x=67;x<98;x+=2.6)s+=`<circle cx="${x}" cy="297.4" r=".8" fill="#55585e"/>`;
+  return s;
+}
+/* ---- Stadion-Hintergründe (eigene Zeichnungen, ohne Namen und Logos) ---- */
+function bgSVG(id,u){
+  let a=97531;const R=()=>{a=(a*1103515245+12345)&0x7fffffff;return a/0x7fffffff;};
+  const sky=(c1,c2)=>`<defs><linearGradient id="${u}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect x="0" y="-14" width="200" height="320" fill="url(#${u}s)"/>`;
+  const grass=(y,c1='#3f8a3c',c2='#4a9a45')=>{let s=`<rect x="0" y="${y}" width="200" height="${306-y}" fill="${c1}"/>`;for(let x=-40;x<240;x+=28)s+=`<path d="M${x},306 L${x+14},${y} L${x+28},${y} L${x+14},306 Z" fill="${c2}"/>`;return s;};
+  const track=(y,h=8)=>`<rect x="0" y="${y}" width="200" height="${h}" fill="#b98a5e"/><rect x="0" y="${y}" width="200" height="1.5" fill="#000" opacity=".15"/>`;
+  const crowd=(x0,y0,w,h,cols,st=4.2)=>{let s='';for(let y=y0;y<y0+h;y+=st)for(let x=x0;x<x0+w;x+=st)s+=`<rect x="${(x+R()*1.4).toFixed(1)}" y="${(y+R()*1.2).toFixed(1)}" width="2.3" height="2.3" fill="${cols[Math.floor(R()*cols.length)]}"/>`;return s;};
+  const light=(x,y,h)=>{let s=`<rect x="${x-1.2}" y="${y}" width="2.4" height="${h}" fill="#5b6168"/><rect x="${x-10}" y="${y-9}" width="20" height="10" rx="1" fill="#3b4046"/>`;for(let i=0;i<3;i++)for(let j=0;j<4;j++)s+=`<circle cx="${x-6.6+j*4.4}" cy="${y-6.4+i*2.8}" r="1.1" fill="#fff6c8"/>`;return s;};
+  let s='';
+  switch(id){
+  case 'bg1': /* hohe grüne Wand, Handanzeige */
+    s+=sky('#7fb6e3','#d9ecf8')+light(16,30,90)+light(184,30,90);
+    s+=`<rect x="0" y="88" width="200" height="30" fill="#ffffff" opacity=".1"/>`;for(let x=0;x<=200;x+=8)s+=`<path d="M${x},88 L${x},118" stroke="#fff" stroke-opacity=".18" stroke-width=".6"/>`;
+    s+=`<rect x="0" y="118" width="200" height="138" fill="#2f5c39"/><rect x="0" y="118" width="200" height="3" fill="#1d3d25"/>`;
+    s+=`<rect x="110" y="134" width="84" height="66" fill="#244a2e" stroke="#1b3a23" stroke-width="1.5"/>`;
+    for(let r=0;r<3;r++)for(let c=0;c<10;c++){const x=114+c*7.8,y=146+r*16;s+=`<rect x="${x}" y="${y}" width="6" height="11" fill="#1b3a23"/>`;if(R()>.35)s+=`<rect x="${x+1.6}" y="${y+2}" width="2.8" height="7" fill="#f2f2ea"/>`;}
+    s+=`<path d="M30,122 L30,236 M38,122 L38,236" stroke="#d9d4c5" stroke-width="1.2"/>`;for(let y=128;y<236;y+=9)s+=`<path d="M30,${y} L38,${y}" stroke="#d9d4c5" stroke-width="1"/>`;
+    s+=track(256)+grass(264);break;
+  case 'bg2': /* Efeu-Wand mit Tribüne und Anzeigetafel */
+    s+=sky('#9ccbee','#e6f2fa');
+    s+=`<rect x="0" y="92" width="200" height="60" fill="#5b5f63"/>`+crowd(0,94,200,56,['#e9e9e9','#3b3f45','#9aa3b5','#d9b26a','#6f8fb0']);
+    s+=`<rect x="96" y="60" width="3" height="34" fill="#2f5d3a"/><rect x="101" y="60" width="3" height="34" fill="#2f5d3a"/>`;
+    s+=`<rect x="50" y="16" width="100" height="46" fill="#2f5d3a" stroke="#e9e4d3" stroke-width="1.2"/>`;
+    for(let r=0;r<3;r++)for(let c=0;c<11;c++)s+=`<rect x="${55+c*8.4}" y="${23+r*12}" width="5.5" height="8" fill="${R()>.4?'#f2f2ea':'#244a2e'}"/>`;
+    s+=`<circle cx="100" cy="6" r="7" fill="#f2f2ea" stroke="#2f5d3a" stroke-width="2"/><path d="M100,6 L100,1.5 M100,6 L103.5,7.5" stroke="#2f5d3a" stroke-width="1.2"/>`;
+    ['#c8102e','#1f3e8c','#f2c14e','#2f8f4e','#f2f2f2','#7a3fb0'].forEach((c,i)=>{const x=54+i*18;s+=`<path d="M${x},16 L${x},-2" stroke="#e9e4d3" stroke-width=".8"/><path d="M${x},-2 L${x+9},1 L${x},4 Z" fill="${c}"/>`;});
+    s+=`<rect x="0" y="152" width="200" height="104" fill="#7a3a28"/>`;
+    for(let i=0;i<460;i++)s+=`<circle cx="${(R()*200).toFixed(1)}" cy="${(152+R()*104).toFixed(1)}" r="${(2+R()*2.4).toFixed(1)}" fill="${['#2f6b2c','#3b7e33','#4f9440','#285e27'][Math.floor(R()*4)]}"/>`;
+    s+=track(256)+grass(264);break;
+  case 'bg3': /* Bucht mit Kajaks hinter der rechten Mauer */
+    s+=sky('#f39a63','#fbe1c7')+`<circle cx="152" cy="74" r="17" fill="#ffd48a" opacity=".9"/>`;
+    s+=`<path d="M0,128 Q40,102 80,120 Q120,96 160,116 Q185,108 200,118 L200,140 L0,140 Z" fill="#8a6f73"/>`;
+    s+=`<path d="M26,66 L26,140 M80,66 L80,140" stroke="#5c5058" stroke-width="4"/><path d="M0,126 Q13,76 26,66 Q53,118 80,66 Q107,118 134,72 Q150,100 170,108" stroke="#5c5058" stroke-width="1.6" fill="none"/><rect x="0" y="126" width="180" height="3" fill="#5c5058"/>`;
+    s+=`<rect x="0" y="140" width="200" height="62" fill="#3d6f99"/>`;for(let i=0;i<26;i++){const x=R()*200,y=146+R()*52;s+=`<path d="M${x.toFixed(1)},${y.toFixed(1)} l8,0" stroke="#9cc0dd" stroke-width="1" opacity=".8"/>`;}
+    [[34,176,'#e7533a'],[62,186,'#f2c14e'],[150,170,'#e7533a'],[176,188,'#2f8f4e']].forEach(([x,y,c])=>s+=`<ellipse cx="${x}" cy="${y}" rx="9" ry="2.4" fill="${c}"/><circle cx="${x}" cy="${y-3}" r="1.8" fill="#2a2a2a"/>`);
+    s+=`<rect x="0" y="202" width="200" height="54" fill="#9b4a36"/><rect x="0" y="202" width="200" height="4" fill="#d9cbb3"/>`;
+    for(let x=6;x<200;x+=24)s+=`<path d="M${x},252 L${x},226 Q${x+8},214 ${x+16},226 L${x+16},252 Z" fill="#3d2a24" opacity=".75"/>`;
+    s+=track(256)+grass(264);break;
+  case 'bg4': /* Wüste, Dachträger und Pool */
+    s+=sky('#5aa7e6','#cfe7fa');
+    s+=`<path d="M0,138 L22,104 L44,126 L74,90 L104,128 L130,98 L162,132 L184,108 L200,124 L200,160 L0,160 Z" fill="#b5653d"/><path d="M0,150 L30,128 L58,146 L96,120 L126,148 L160,126 L200,146 L200,162 L0,162 Z" fill="#8f4e30"/>`;
+    s+=`<rect x="0" y="-4" width="200" height="4" fill="#3d434a"/><rect x="0" y="22" width="200" height="4" fill="#3d434a"/>`;for(let x=0;x<200;x+=20)s+=`<path d="M${x},0 L${x+10},22 L${x+20},0" stroke="#3d434a" stroke-width="1.6" fill="none"/>`;
+    s+=`<path d="M0,26 L46,26 L46,160 L0,160 Z M154,26 L200,26 L200,160 L154,160 Z" fill="#6e737a"/>`+crowd(2,32,42,124,['#e9e9e9','#3b3f45','#9aa3b5','#d9b26a','#6f8fb0'])+crowd(156,32,42,124,['#e9e9e9','#3b3f45','#9aa3b5','#d9b26a','#6f8fb0']);
+    s+=`<rect x="0" y="160" width="200" height="96" fill="#1f4e5a"/><rect x="124" y="170" width="70" height="34" rx="3" fill="#d9c7a6"/><rect x="130" y="175" width="58" height="22" rx="5" fill="#43c6d9"/>`;
+    for(let i=0;i<5;i++)s+=`<path d="M${134+i*11},${181+(i%2)*6} q4,-2 8,0" stroke="#fff" stroke-width="1" fill="none" opacity=".8"/>`;
+    s+=track(256)+grass(264);break;
+  case 'bg5': /* Nacht, große Tribüne mit Bogen-Fries */
+    s+=sky('#0b1430','#25365e');for(let i=0;i<40;i++)s+=`<circle cx="${(R()*200).toFixed(1)}" cy="${(-12+R()*44).toFixed(1)}" r="${(.5+R()*.8).toFixed(1)}" fill="#fff" opacity="${(.5+R()*.5).toFixed(2)}"/>`;
+    s+=`<rect x="0" y="40" width="200" height="120" fill="#3a4150"/>`+crowd(0,58,200,96,['#e9e9e9','#3b3f45','#9aa3b5','#d9b26a','#6f8fb0']);
+    s+=`<rect x="0" y="40" width="200" height="4" fill="#f4f4f1"/>`;for(let x=0;x<200;x+=10)s+=`<path d="M${x},56 L${x},44 M${x},56 Q${x+5},45 ${x+10},56" stroke="#f4f4f1" stroke-width="1.4" fill="none"/>`;
+    [30,100,170].forEach(x=>{s+=`<circle cx="${x}" cy="30" r="16" fill="#fff6c8" opacity=".18"/>`+light(x,34,6);});
+    s+=`<rect x="0" y="160" width="200" height="96" fill="#16264a"/><rect x="0" y="160" width="200" height="6" fill="#2a3d6b"/>`;
+    s+=track(256)+grass(264,'#47a044','#52b04e');break;
+  case 'bg6': /* Felsenlandschaft mit Wasserfall und Fontänen */
+    s+=sky('#8cc7ef','#f0e6c8');
+    [[18,0],[182,1]].forEach(([x,f])=>{const d=f?-1:1;s+=`<path d="M${x},230 Q${x+4*d},170 ${x+2*d},120" stroke="#6b4a2e" stroke-width="4" fill="none"/>`;for(let k=0;k<6;k++){const an=k*60;s+=`<path d="M${x+2*d},120 q${(Math.cos(an*Math.PI/180)*14).toFixed(1)},${(Math.sin(an*Math.PI/180)*8-4).toFixed(1)} ${(Math.cos(an*Math.PI/180)*24).toFixed(1)},${(Math.sin(an*Math.PI/180)*10+6).toFixed(1)}" stroke="#2f6b2c" stroke-width="3" fill="none" stroke-linecap="round"/>`;}});
+    s+=`<path d="M40,232 L52,176 L70,160 L84,130 L102,122 L120,138 L134,128 L152,168 L162,232 Z" fill="#9b6a43"/><path d="M58,232 L66,190 L84,174 L96,150 L112,160 L128,150 L140,190 L146,232 Z" fill="#7c5233"/><path d="M84,130 L102,122 L110,140 L92,146 Z M120,138 L134,128 L140,150 L126,152 Z" fill="#b8835a"/>`;
+    s+=`<path d="M98,150 L104,150 L108,232 L94,232 Z" fill="#9fd3f0" opacity=".85"/><path d="M99,160 L100,228 M103,158 L105,228" stroke="#fff" stroke-width=".8" opacity=".8"/>`;
+    [[70,150],[134,146]].forEach(([x,y])=>s+=`<path d="M${x-3},${y} Q${x-6},${y-40} ${x},${y-62} Q${x+6},${y-40} ${x+3},${y} Z" fill="#ffffff" opacity=".8"/>`);
+    s+=`<rect x="0" y="232" width="200" height="24" fill="#2b4f3a"/>`+track(256)+grass(264);break;
+  case 'bg7': /* Fluss, Skyline und gelbe Brücke */
+    s+=sky('#a9d4f2','#eef6fc');
+    [[0,70,22],[24,46,18],[44,84,16],[62,30,20],[84,60,14],[100,40,24],[126,76,18],[146,24,22],[170,56,16],[186,70,14]].forEach(([x,y,w],i)=>{s+=`<rect x="${x}" y="${y}" width="${w}" height="${150-y}" fill="${['#7d8fa3','#6b7d92','#93a4b6'][i%3]}"/>`;for(let yy=y+6;yy<146;yy+=8)for(let xx=x+3;xx<x+w-3;xx+=5)if(R()>.45)s+=`<rect x="${xx}" y="${yy}" width="2" height="3" fill="#e8eef5" opacity=".7"/>`;});
+    s+=`<rect x="0" y="150" width="200" height="48" fill="#4f7fa8"/>`;for(let i=0;i<18;i++){const x=R()*200,y=158+R()*36;s+=`<path d="M${x.toFixed(1)},${y.toFixed(1)} l9,0" stroke="#a9c8e2" stroke-width="1" opacity=".8"/>`;}
+    s+=`<path d="M0,152 L150,152" stroke="#f2c14e" stroke-width="4"/><path d="M0,152 Q37,116 75,152 Q112,116 150,152" stroke="#f2c14e" stroke-width="2.4" fill="none"/>`;for(let x=8;x<150;x+=10)s+=`<path d="M${x},152 L${x},${(152-Math.max(0,36-Math.abs((x%75)-37.5))*0.95).toFixed(1)}" stroke="#f2c14e" stroke-width=".8"/>`;
+    s+=`<rect x="0" y="198" width="200" height="58" fill="#203a2c"/><rect x="0" y="198" width="200" height="4" fill="#d9cbb3"/>`+track(256)+grass(264);break;
+  default: /* Trainingsplatz */
+    s+=`<rect x="0" y="-14" width="200" height="320" fill="#1f2e24"/>`+grass(252,'#3d7a3c','#458640');
+  }
+  return s;
+}
+function avatarSVG(av,eq,crop){
+  const u='a'+(++uid),cap=item('cap',eq.cap),j=item('jersey',eq.jersey),sh=item('shoe',eq.shoe),bt=item('bat',eq.bat);
+  const mu=item('muscle',eq.muscle).lvl,bd=item('build',eq.build).sx,ht=1,o=mu*6,aw=10+mu*3.6;
+  const skin=SKINS[av.skin]||SKINS[1],hair=HAIRS[av.hair]||HAIRS[0],pin=j.style==='pin'?u+'p':null,tee=j.style==='tee'||j.style==='raglan';
+  let s=`<svg viewBox="${crop||'0 -14 200 320'}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Avatar ${esc(av.name)} mit ${esc(cap.name)}, ${esc(j.team+' '+j.name)}, ${esc(sh.name)} und Bat ${esc(bt.name)}"><defs>${pin?pinPat(pin,j.stripe):''}</defs>`;
+  s+=bgSVG(eq.bg||'bg0',u)+`<ellipse cx="100" cy="299" rx="${62*bd}" ry="6" fill="#000" opacity=".22"/><g transform="translate(100 299) scale(${ht}) translate(-100 -299)">`;
+  const BG=`<g transform="translate(100 0) scale(${bd} 1) translate(-100 0)">`;
+  if(av.style==='lang')s+=`<path d="M78,84 Q75,120 84,130 L116,130 Q125,120 122,84 Z" fill="${hair}"/>`;
+  if(av.style==='zopf')s+=`<ellipse cx="125" cy="104" rx="5.5" ry="15" transform="rotate(-18 125 104)" fill="${hair}"/>`;
+  const legs='M71,196 L99,196 L97,264 L75,264 Z M101,196 L129,196 L125,264 L103,264 Z';
+  s+=BG+fill2(legs,j.pants,j.pinPants?pin:null);
+  s+=`<path d="M86,212 L86,262 M114,212 L114,262" stroke="#000" stroke-opacity=".08" stroke-width="1.5"/>`;
+  s+=`<path d="M75,264 L97,264 L97,282 L77,282 Z M103,264 L125,264 L123,282 L103,282 Z" fill="${j.socks}"/><path d="M75.4,269 L97,269 M103,269 L124.6,269" stroke="#fff" stroke-opacity=".7" stroke-width="1.8"/>`;
+  s+='</g>'+footSVG(sh)+`<g transform="translate(200 0) scale(-1 1)">${footSVG(sh)}</g>`+BG;
+  s+=`<rect x="${92-mu*1.5}" y="98" width="${16+mu*3}" height="18" fill="${skin}"/><rect x="${92-mu*1.5}" y="108" width="${16+mu*3}" height="7" fill="#000" opacity=".1"/>`;
+  if(mu>=2)s+=`<path d="M${92-mu*1.5},112 Q${80-mu*2},${108} ${68-o/2},114 L${92-mu*1.5},116 Z M${108+mu*1.5},112 Q${120+mu*2},108 ${132+o/2},114 L${108+mu*1.5},116 Z" fill="${skin}"/>`;
+  const sleeves=`M${66-o/2},112 L${50-o},138 L${62-o},146 L70,130 Z M${134+o/2},112 L${150+o},138 L${138+o},146 L130,130 Z`;
+  s+=j.style==='raglan'?`<path d="${sleeves}" fill="${j.sleeve}"/>`:fill2(sleeves,j.base,pin);
+  s+=fill2(`M${66-o/2},112 Q100,${104-mu*2} ${134+o/2},112 L${131+mu},150 L131,198 L69,198 L${69-mu},150 Z`,j.base,pin);
+  if(j.style==='raglan')s+=`<path d="M66,112 L84,110 L72,132 Z M134,112 L116,110 L128,132 Z" fill="${j.sleeve}"/>`;
+  s+=`<path d="M${50-o},138 L${62-o},146 M${150+o},138 L${138+o},146" stroke="${j.trim}" stroke-width="2.6"/>`;
+  if(mu>=1)s+=`<path d="M${78-mu*2},${127} Q89,${134+mu*2} 98.5,${129+mu} M101.5,${129+mu} Q111,${134+mu*2} ${122+mu*2},127" stroke="#000" stroke-opacity="${(.08+mu*.05).toFixed(2)}" stroke-width="${1.2+mu*.5}" fill="none" stroke-linecap="round"/>`;
+  s+=tee?`<path d="M89,109 Q100,119 111,109" fill="none" stroke="${j.trim}" stroke-width="3"/>`:`<path d="M90,108 L100,118 L110,108" fill="none" stroke="${j.trim}" stroke-width="3"/>`;
+  if(!tee){
+    if(j.style==='button')s+=`<rect x="97.4" y="117" width="5.2" height="81" fill="${j.placket}"/>`;
+    const bc=j.style==='button'?'#ffffff':j.trim;
+    s+=`<path d="M100,118 L100,198" stroke="${bc}" stroke-opacity=".55" stroke-width="1"/>`;
+    for(let y=126;y<196;y+=14)s+=`<circle cx="100" cy="${y}" r="1.15" fill="${bc}" opacity=".85"/>`;
+  }
+  const fs=Math.min(17,64/(j.word.length*.62)).toFixed(1);
+  s+=`<text x="100" y="147" text-anchor="middle" font-family="${FD}" font-weight="700" font-size="${fs}" fill="${j.trim}" letter-spacing=".4">${esc(j.word)}</text>`;
+  s+=`<text x="84" y="166" text-anchor="middle" font-family="${FD}" font-weight="700" font-size="13" fill="${j.trim}">${esc(av.num)}</text>`;
+  s+=`<rect x="69" y="191.5" width="62" height="7" fill="${j.belt||'#1b1b1d'}"/><rect x="95.5" y="192" width="9" height="6" rx="1" fill="none" stroke="#d7d7d7" stroke-width="1.2"/>`;
+  s+=`<path d="M${56-o},${142+mu} Q${62-o},194 127,180" fill="none" stroke="${skin}" stroke-width="${aw}" stroke-linecap="round"/><path d="M${144+o},${142+mu} Q${151+o},164 135,168" fill="none" stroke="${skin}" stroke-width="${aw}" stroke-linecap="round"/>`;
+  if(mu>=1){const rx=(4+mu*2.6).toFixed(1),ry=(7+mu*1.8).toFixed(1);
+    s+=`<ellipse cx="${57-o}" cy="${153+mu}" rx="${rx}" ry="${ry}" fill="${skin}"/><ellipse cx="${143+o}" cy="${153+mu}" rx="${rx}" ry="${ry}" fill="${skin}"/>`;
+    s+=`<path d="M${57-o-rx*.7},${150+mu} Q${57-o},${144+mu} ${57-o+rx*.7},${150+mu} M${143+o-rx*.7},${150+mu} Q${143+o},${144+mu} ${143+o+rx*.7},${150+mu}" stroke="#fff" stroke-opacity=".28" stroke-width="1.4" fill="none"/>`;
+    s+=`<path d="M${57-o-rx*.8},${157+mu} Q${57-o},${164+mu*2} ${57-o+rx*.8},${157+mu} M${143+o-rx*.8},${157+mu} Q${143+o},${164+mu*2} ${143+o+rx*.8},${157+mu}" stroke="#000" stroke-opacity="${(.1+mu*.04).toFixed(2)}" stroke-width="1.4" fill="none"/>`;
+    s+=`<path d="M${50-o},138 L${62-o},146 M${150+o},138 L${138+o},146" stroke="${j.trim}" stroke-width="2.6"/>`;}
+  if(mu>=3)s+=`<path d="M${70-o*.5},178 q8,3 16,1 M${143+o*.3},162 q-2,5 -5,7" stroke="#000" stroke-opacity=".12" stroke-width="1" fill="none"/>`;
+  s+=`<g transform="translate(131 182) rotate(14.1)">${batSVG(bt)}</g>`;
+  s+=`<circle cx="131.5" cy="178" r="6.2" fill="${skin}"/><circle cx="134.2" cy="167" r="6.2" fill="${skin}"/><path d="M127.5,177 L135.5,179 M130.2,166 L138.2,168" stroke="#000" stroke-opacity=".15" stroke-width="1"/>`+'</g>';
+  s+=`<circle cx="78" cy="90" r="4.5" fill="${skin}"/><circle cx="122" cy="90" r="4.5" fill="${skin}"/><circle cx="100" cy="84" r="22" fill="${skin}"/>`;
+  s+=`<path d="M78,77 L83,77 L83,92 L79,89 Z M122,77 L117,77 L117,92 L121,89 Z" fill="${hair}"/>`;
+  s+=`<path d="M80,87 Q100,93 120,87" stroke="#000" stroke-opacity=".12" stroke-width="3" fill="none"/>`;
+  s+=`<circle cx="93" cy="91" r="2.2" fill="#1b1b1b"/><circle cx="107" cy="91" r="2.2" fill="#1b1b1b"/><path d="M95,100 Q100,103.5 105,100" fill="none" stroke="#5a2a1a" stroke-width="1.6" stroke-linecap="round"/>`;
+  if(av.style==='bart')s+=`<path d="M79,90 Q80,111 100,111 Q120,111 121,90 Q118,103 100,104 Q82,103 79,90 Z" fill="${hair}"/><path d="M93,98.5 Q100,95.5 107,98.5" stroke="${hair}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+  const L=`<text x="100" y="72" text-anchor="middle" font-family="${FD}" font-weight="700" font-size="14" fill="${cap.letter}">${esc(j.abbr)}</text>`;
+  if(cap.helmet){
+    s+=`<path d="M75,82 Q73,46 100,45 Q127,46 125,82 Z" fill="${cap.crown}"/><path d="M110,79 L127,79 Q129,99 118,103 L110,98 Z" fill="${cap.crown}"/><circle cx="118" cy="90" r="2.4" fill="#000" opacity=".35"/>`;
+    s+=`<path d="M83,60 Q91,50 105,50" stroke="#fff" stroke-opacity="${cap.gloss?.5:.22}" stroke-width="3.2" fill="none" stroke-linecap="round"/>`;
+    s+=`<path d="M78,78 Q100,71 122,78 Q120,85 100,86 Q80,85 78,78 Z" fill="${cap.brim}"/><path d="M78,78 Q100,71 122,78" stroke="#000" stroke-opacity=".25" stroke-width="1" fill="none"/>`+L;
+  }else{
+    s+=`<path d="M77,78 Q77,50 100,49 Q123,50 123,78 Z" fill="${cap.crown}"/>`;
+    if(cap.front)s+=`<path d="M86,78 Q87,53 100,50 Q113,53 114,78 Z" fill="${cap.front}"/>`;
+    s+=`<path d="M100,50 L100,77 M88,77 Q89,56 100,50 M112,77 Q111,56 100,50" stroke="#000" stroke-opacity=".16" stroke-width=".8" fill="none"/><circle cx="100" cy="49.5" r="2.4" fill="${cap.brim}"/>`;
+    s+=L+`<path d="M73,78 Q100,70 127,78 Q126,85 100,87 Q74,85 73,78 Z" fill="${cap.brim}"/><path d="M73,78 Q100,70 127,78" stroke="#000" stroke-opacity=".22" stroke-width="1" fill="none"/>`;
+  }
+  return s+'</g></svg>';
+}
+function iconSVG(cat,it){
+  const u='i'+(++uid);
+  if(cat==='muscle'||cat==='build')return avatarSVG(prof.av,{...prof.eq,[cat]:it.id},'28 40 144 168').replace('<svg ','<svg class="tall" ');
+  if(cat==='bg')return `<svg class="tall" viewBox="0 -14 200 236" aria-hidden="true">${bgSVG(it.id,u)}</svg>`;
+  if(cat==='bat')return `<svg viewBox="0 0 60 40" aria-hidden="true"><g transform="translate(7 30) rotate(75) scale(.36)">${batSVG(it)}</g></svg>`;
+  if(cat==='shoe')return `<svg viewBox="0 0 60 40" aria-hidden="true">${it.cut==='mid'?`<path d="M6,22 L7,7 Q12,5 19,7 L21,14 Z" fill="${it.upper}"/>`:''}<path d="M6,31 L6,20 Q7,13 16,13 L26,13 Q32,22 50,24 Q56,25 56,31 Z" fill="${it.upper}"/><path d="M20,27 L46,23 L47,26 L22,30 Z" fill="${it.accent}"/><path d="M26,13 Q24,17 20,18" stroke="#fff" stroke-opacity=".5" stroke-width="1" fill="none"/><rect x="5" y="30.5" width="52" height="3.4" rx="1.2" fill="${it.sole}" stroke="#000" stroke-opacity=".15" stroke-width=".5"/>${it.type==='metal'?[9,19,38,47].map(x=>`<path d="M${x},33.9 L${x+3},33.9 L${x+2.2},38 L${x+.8},38 Z" fill="#9aa2aa"/>`).join(''):it.type==='molded'?[8,15,22,36,43,50].map(x=>`<rect x="${x}" y="33.6" width="3" height="3.2" rx="1.2" fill="#3a3c40"/>`).join(''):''}</svg>`;
+  if(cat==='cap'){
+    const j=item('jersey',prof.eq.jersey);
+    if(it.helmet)return `<svg viewBox="0 0 60 40" aria-hidden="true"><path d="M8,31 Q7,6 30,6 Q50,6 51,26 L58,28 Q59,32 52,32 L8,32 Z" fill="${it.crown}"/><path d="M14,24 Q12,36 22,37 L28,34 L26,24 Z" fill="${it.crown}" stroke="#000" stroke-opacity=".2" stroke-width=".6"/><path d="M16,13 Q24,8 34,9" stroke="#fff" stroke-opacity="${it.gloss?.55:.25}" stroke-width="2.4" fill="none" stroke-linecap="round"/><text x="40" y="22" text-anchor="middle" font-family="${FD}" font-weight="700" font-size="9" fill="${it.letter}">${esc(j.abbr)}</text></svg>`;
+    return `<svg viewBox="0 0 60 40" aria-hidden="true"><path d="M12,30 Q12,8 30,8 Q46,8 46,30 Z" fill="${it.crown}"/>${it.front?`<path d="M30,8 Q46,8 46,30 L35,30 Q35,13 30,8 Z" fill="${it.front}"/>`:''}<path d="M30,8 Q35,14 35,30 M30,8 Q24,14 22,30" stroke="#000" stroke-opacity=".15" stroke-width=".7" fill="none"/><circle cx="30" cy="8" r="1.8" fill="${it.brim}"/><path d="M44,29 Q55,28 58,31.5 Q55,34 44,33 Z" fill="${it.brim}"/><text x="40.5" y="24" text-anchor="middle" font-family="${FD}" font-weight="700" font-size="9" fill="${it.letter}">${esc(j.abbr)}</text></svg>`;
+  }
+  const pin=it.style==='pin'?u+'p':null,shirt='M18,7 L25,4 Q30,8 35,4 L42,7 L53,15 L47,22 L42,18 L42,37 L18,37 L18,18 L13,22 L7,15 Z';
+  return `<svg viewBox="0 0 60 40" aria-hidden="true"><defs>${pin?pinPat(pin,it.stripe):''}</defs>${fill2(shirt,it.base,pin)}${it.style==='raglan'?`<path d="M18,7 L25,4 L28,6 L18,18 L13,22 L7,15 Z M42,7 L35,4 L32,6 L42,18 L47,22 L53,15 Z" fill="${it.sleeve}"/>`:''}<path d="M18,37 L42,37" stroke="#000" stroke-opacity=".12"/><path d="M7,15 L13,22 M53,15 L47,22" stroke="${it.trim}" stroke-width="1.4"/>${it.style==='button'?`<rect x="29" y="7" width="2" height="30" fill="${it.placket}"/>`:''}<text x="30" y="22" text-anchor="middle" font-family="${FD}" font-weight="700" font-size="${Math.min(8,26/(it.word.length*.5)).toFixed(1)}" fill="${it.trim}">${esc(it.word)}</text><rect x="0.5" y="0.5" width="59" height="39" fill="none"/></svg>`;
+}
+
+/* ---- Spind & Shop ---- */
+let shopCat='cap',preview=null;
+function eqView(){const e={...prof.eq};if(preview)e[preview.cat]=preview.id;return e;}
+function renderAvatar(){
+  $('avatar').innerHTML=avatarSVG(prof.av,eqView());$('pvTag').hidden=!preview;
+  $('plNum').textContent='#'+prof.av.num;$('plName').textContent=prof.av.name||'Spieler';
+  const r=rankOf(prof.earned);$('rankName').textContent=r.name;
+  if(r.next){$('rankFill').style.width=Math.round((prof.earned-r.base)/(r.next[0]-r.base)*100)+'%';$('rankNext').textContent=`${r.next[0]-prof.earned} Coins bis ${r.next[1]} · beste Serie: ${prof.best}`;}
+  else{$('rankFill').style.width='100%';$('rankNext').textContent=`Höchster Rang erreicht · beste Serie: ${prof.best}`;}
+}
+function renderShop(){
+  [...$('shopTabs').children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.cat===shopCat));
+  $('items').innerHTML=SHOP[shopCat].map(it=>{
+    const own=prof.owned.includes(it.id),on=prof.eq[shopCat]===it.id,pv=preview&&preview.id===it.id,can=prof.coins>=it.price;
+    const status=on?'<span class="pill">Trägst du</span>':own?'<span class="pill own">Im Spind</span>':`<span class="price"><i class="coin"></i>${it.price}</span>`;
+    let btns='';
+    if(own&&!on)btns=`<button type="button" class="btn primary" data-act="wear" data-id="${it.id}">Anziehen</button>`;
+    else if(!own)btns=`<button type="button" class="btn" data-act="try" data-id="${it.id}">${pv?'Vorschau beenden':'Anprobieren'}</button><button type="button" class="btn primary" data-act="buy" data-id="${it.id}"${can?'':' disabled'}>${can?'Kaufen':'Noch '+(it.price-prof.coins)+' Coins'}</button>`;
+    return `<article class="item${on?' on':''}"><div class="ic">${iconSVG(shopCat,it)}</div><div class="ihead"><h4>${esc(it.name)}</h4>${status}</div>${it.team?`<p class="team">${esc(it.team)}</p>`:''}<p class="desc">${esc(it.desc)}</p>${it.spec?`<p class="spec">${esc(it.spec)}</p>`:''}${it.dbl?`<p class="dbl ${it.dblOk===true?'ok':it.dblOk===false?'no':''}">${esc(it.dbl)}</p>`:''}${it.tip?`<p class="dbl">${esc(it.tip)}</p>`:''}${btns?`<div class="row">${btns}</div>`:''}</article>`;
+  }).join('');
+}
+function renderLocker(){renderAvatar();renderShop();updCoins(false);
+  [...$('swSkin').children].forEach((b,i)=>b.setAttribute('aria-pressed',i===prof.av.skin));
+  [...$('swHair').children].forEach((b,i)=>b.setAttribute('aria-pressed',i===prof.av.hair));
+  [...$('swStyle').children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.st===prof.av.style));}
+CATS.forEach(([k,l])=>{const b=document.createElement('button');b.type='button';b.className='chip all';b.dataset.cat=k;b.textContent=l;
+  b.addEventListener('click',()=>{shopCat=k;preview=null;renderLocker();});$('shopTabs').appendChild(b);});
+$('items').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-act]');if(!b)return;
+  const it=item(shopCat,b.dataset.id),act=b.dataset.act;
+  if(act==='try'){preview=preview&&preview.id===it.id?null:{cat:shopCat,id:it.id};}
+  else if(act==='wear'){prof.eq[shopCat]=it.id;preview=null;saveP();toast(`${esc(it.name)} angezogen`);}
+  else if(act==='buy'&&prof.coins>=it.price){prof.coins-=it.price;prof.owned.push(it.id);prof.eq[shopCat]=it.id;preview=null;saveP();toast(`<i class="coin"></i>−${it.price} · ${esc(it.name)} gekauft`);}
+  renderLocker();
+});
+SKINS.forEach((c,i)=>{const b=document.createElement('button');b.type='button';b.className='sw';b.style.background=c;b.setAttribute('aria-label','Hautfarbe '+(i+1));
+  b.addEventListener('click',()=>{prof.av.skin=i;saveP();renderLocker();});$('swSkin').appendChild(b);});
+HAIRS.forEach((c,i)=>{const b=document.createElement('button');b.type='button';b.className='sw';b.style.background=c;b.setAttribute('aria-label','Haarfarbe '+(i+1));
+  b.addEventListener('click',()=>{prof.av.hair=i;saveP();renderLocker();});$('swHair').appendChild(b);});
+STYLES.forEach(([k,l])=>{const b=document.createElement('button');b.type='button';b.className='chip all';b.dataset.st=k;b.textContent=l;
+  b.addEventListener('click',()=>{prof.av.style=k;saveP();renderLocker();});$('swStyle').appendChild(b);});
+$('avName').value=prof.av.name;$('avNum').value=prof.av.num;
+$('avName').addEventListener('input',e=>{prof.av.name=e.target.value.slice(0,14);saveP();renderAvatar();});
+$('avNum').addEventListener('input',e=>{const n=parseInt(e.target.value,10);if(!isNaN(n)){prof.av.num=Math.max(0,Math.min(99,n));saveP();renderAvatar();}});
+$('avNum').addEventListener('blur',e=>{e.target.value=prof.av.num;});
+
+function showView(v){
+  const map={train:'Train',rules:'Rules',locker:'Locker'};
+  Object.keys(map).forEach(k=>{$('view'+map[k]).hidden=k!==v;$('tab'+map[k]).setAttribute('aria-selected',k===v);});
+  if(v==='locker'){preview=null;renderLocker();}
+  const sv=$('view'+map[v]);if(sv)sv.scrollTop=0;
+}
+$('tabRules').addEventListener('click',()=>showView('rules'));
+$('tabTrain').addEventListener('click',()=>showView('train'));
+$('tabLocker').addEventListener('click',()=>showView('locker'));
+$('coinBtn').addEventListener('click',()=>showView('locker'));
+
+updCoins(false);
+
+/* ================= Startbildschirm ================= */
+function runIntro(done){
+  const ov=$('intro'),svg=$('introSvg');let fin=false,ir=0,go=false;
+  const finish=()=>{if(fin)return;fin=true;cancelAnimationFrame(ir);ov.classList.add('out');setTimeout(()=>{ov.hidden=true;done();},450);};
+  $('introGo').addEventListener('click',finish);
+  $('introSkip').addEventListener('click',finish);
+  document.addEventListener('keydown',function k(e){if(!ov.hidden&&!fin&&(e.key==='Enter'||e.key==='Escape')){e.preventDefault();document.removeEventListener('keydown',k);finish();}});
+  /* Feld aus dem Trainingsfeld übernehmen, ohne die beweglichen Ebenen */
+  const skip=new Set(['layerPaths','layerRunners','layerFielders','shadow','ballG','stopG']);
+  [...$('field').children].forEach(n=>{if(skip.has(n.id))return;const c=n.cloneNode(true);c.removeAttribute('id');c.querySelectorAll&&c.querySelectorAll('[id]').forEach(x=>{if(x.tagName!=='pattern')x.removeAttribute('id');});svg.appendChild(c);});
+  const g=el('g',{},svg),rg=el('g',{},svg),qg=el('g',{},svg);
+  const IF={};
+  ORDER.forEach(k=>{const gg=el('g',{},g);el('circle',{r:7.5,fill:'var(--def)',stroke:'#fff','stroke-width':1.4},gg);const t=el('text',{'text-anchor':'middle',y:3.3,'font-size':9,'font-weight':700,fill:'#fff','font-family':FD},gg);t.textContent=POS[k][0];IF[k]={g:gg,p:[...HOME[k]]};});
+  const shadow=el('ellipse',{rx:3.5,ry:2,fill:'#000',opacity:.35},svg),ball=el('circle',{r:3.4,fill:'#fff',stroke:'#b8102a','stroke-width':.9},svg);
+  const pf=(k,p)=>{IF[k].p=p;IF[k].g.setAttribute('transform',`translate(${p[0]},${p[1]})`);};
+  const pb=(p,h=0)=>{ball.setAttribute('cx',p[0]);ball.setAttribute('cy',p[1]-h);ball.setAttribute('r',3.4+h*.025);shadow.setAttribute('cx',p[0]);shadow.setAttribute('cy',p[1]+1);};
+  let runners=[];
+  const setRunners=list=>{rg.innerHTML='';runners=list.map(st=>{const c=el('circle',{r:6.5,fill:'var(--run)',stroke:'#fff','stroke-width':1.4},rg);const r={c,p:st};const q=onPath(st);c.setAttribute('cx',q[0]);c.setAttribute('cy',q[1]);return r;});};
+  const pr=(r,v)=>{r.p=v;const q=onPath(v);r.c.setAttribute('cx',q[0]);r.c.setAttribute('cy',q[1]);};
+  const reset=list=>{ORDER.forEach(k=>pf(k,[...HOME[k]]));setRunners(list);pb(HOME.P,6);};
+  const seq=(tasks,cb)=>{const t0=performance.now(),end=Math.max(...tasks.map(t=>t.at+t.dur));const step=now=>{if(fin)return;const e=now-t0;tasks.forEach(t=>{const x=(e-t.at)/t.dur;if(x>=0&&!t.f){t.fn(Math.min(1,x));if(x>=1)t.f=1;}});if(e<end)ir=requestAnimationFrame(step);else cb();};ir=requestAnimationFrame(step);};
+  const mv=(k,to,at,dur)=>{let a;return {at,dur,fn:x=>{if(!a)a=[...IF[k].p];pf(k,lerp(a,to,ease(x)));}};};
+  const bl=(from,to,at,dur,peak=0,bounce=false)=>({at,dur,fn:x=>{const h=bounce?4*Math.abs(Math.sin(x*Math.PI*3))*(1-x):peak*4*x*(1-x);pb(lerp(from,to,bounce?easeOut(x):x),h);}});
+  const run=(i,to,at,dur)=>{let a;return {at,dur,fn:x=>{const r=runners[i];if(a===undefined)a=r.p;pr(r,a+(to-a)*easeOut(x));}};};
+  const at=b=>[B[b][0]+4,B[b][1]-6],H=B.H,pitch=bl(HOME.P,H,0,380,8);
+  const plays=[
+    ['Groundball zum Shortstop · 6-3',[0],()=>[pitch,bl(H,[167,228],380,650,0,true),mv('SS',[167,228],420,600),bl([167,228],B['1B'],1100,420,14),run(0,.92,380,1150)]],
+    ['Double Play · 4-6-3',[0,1.06],()=>[pitch,bl(H,[233,228],380,600,0,true),mv('2B',[233,228],420,560),mv('SS',at('2B'),420,600),bl([233,228],B['2B'],1020,260,4),bl(B['2B'],B['1B'],1380,400,14),run(0,.9,380,1350),run(1,1.75,380,950)]],
+    ['Fly Ball · Tag-up nach Home',[3.06],()=>[pitch,bl(H,[200,100],380,1300,120),mv('CF',[200,100],420,1200),mv('1B',[203,300],900,700),run(0,3.06,0,10),run(0,4,1700,900),bl([200,100],[203,300],1720,520,24),bl([203,300],H,2260,300,4)]],
+    ['Single ins Right Field · Cutoff zur 3.',[0,1.06],()=>[pitch,bl(H,[292,180],380,900,10),mv('RF',[292,180],420,860),mv('SS',[192,250],500,700),run(0,1.05,380,1300),run(1,2.95,380,1900),bl([292,180],[192,250],1320,480,14),bl([192,250],B['3B'],1820,360,6)]]
+  ];
+  let i=0;
+  const next=()=>{
+    if(fin)return;
+    if(i>=plays.length){return questions();}
+    const [cap,rs,mk]=plays[i++];$('introCap').textContent=cap;
+    reset(rs.map(v=>v===0?0:v));
+    seq(mk(),()=>setTimeout(next,450));
+  };
+  const questions=()=>{
+    $('introCap').textContent='Und jetzt du: Wohin mit dem Ball?';
+    ball.setAttribute('opacity',0);shadow.setAttribute('opacity',0);
+    const cols=['#f2c14e','#ffffff','#c8102e','#9db8ee','#f2c14e'];let a=4242;const R=()=>{a=(a*1103515245+12345)&0x7fffffff;return a/0x7fffffff;};
+    for(let n=0;n<46;n++){const t=el('text',{x:(10+R()*380).toFixed(0),y:(60+R()*310).toFixed(0),'text-anchor':'middle','font-family':FD,'font-weight':700,'font-size':(16+R()*46).toFixed(0),fill:cols[n%cols.length],class:'qm',style:`animation-delay:${(n*38)}ms`},qg);t.textContent='?';}
+    setTimeout(()=>{if(fin)return;ov.classList.add('end');$('introGo').focus({preventScroll:true});},46*38+700);
+  };
+  let reduce=false;try{reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+  if(reduce){reset([]);ov.classList.add('end');return;}
+  setTimeout(next,300);
+}
+updScore();buildQueue();runIntro(start);
+</script>
+
+</body>
+</html>
