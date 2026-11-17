@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Dateien holen
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Projektordner finden
         run: |
@@ -30,21 +30,30 @@ jobs:
           ls -la
 
       - name: Node einrichten
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Java einrichten
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Android SDK einrichten
-        uses: android-actions/setup-android@v3
-
-      - name: Android-Plattform installieren
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - name: Android SDK vorbereiten (auf GitHub vorinstalliert)
+        run: |
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "Android SDK: $SDK"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          ls "$SDK/platforms" || true
+          if [ -x "$SM" ]; then
+            yes | "$SM" --licenses > /dev/null || true
+            "$SM" "platforms;android-35" "build-tools;35.0.0" "platform-tools" || echo "::warning::sdkmanager konnte nicht nachinstallieren, nutze vorhandene Pakete."
+          else
+            echo "::warning::sdkmanager nicht gefunden, nutze vorhandene Pakete."
+          fi
 
       - name: Abhängigkeiten installieren
         run: npm install --no-audit --no-fund --omit=optional @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/splash-screen@7 @capacitor/status-bar@7
