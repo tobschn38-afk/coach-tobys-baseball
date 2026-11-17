@@ -4,7 +4,7 @@
   "description": "Baseball-Training: Spielzüge ansehen und entscheiden, wohin der Ball muss.",
   "private": true,
   "scripts": {
-    "icons": "capacitor-assets generate --iconBackgroundColor '#1f2e24' --iconBackgroundColorDark '#0c130e' --splashBackgroundColor '#1f2e24' --splashBackgroundColorDark '#0c130e'",
+    "icons": "npx --yes @capacitor/assets@3.0.5 generate --iconBackgroundColor '#1f2e24' --iconBackgroundColorDark '#0c130e' --splashBackgroundColor '#1f2e24' --splashBackgroundColorDark '#0c130e'",
     "sync": "cap sync",
     "android": "cap sync android && cap open android",
     "ios": "cap sync ios && cap open ios"
@@ -17,7 +17,6 @@
     "@capacitor/status-bar": "^7.0.0"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.0.0"
   }
 }
